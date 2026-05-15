@@ -1,0 +1,70 @@
+'use client'
+
+import { useState, FormEvent } from 'react'
+import { useRouter } from 'next/navigation'
+
+export default function LoginPage() {
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      })
+
+      if (res.ok) {
+        router.push('/')
+        router.refresh()
+      } else {
+        setError('Wrong password.')
+      }
+    } catch {
+      setError('Connection error. Try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
+      <div className="w-full max-w-sm">
+        <h1 className="text-2xl font-bold text-white mb-1">Body Composition Copilot</h1>
+        <p className="text-zinc-400 text-sm mb-8">Personal dashboard — enter password to continue</p>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            placeholder="Password"
+            autoFocus
+            className="w-full px-4 py-3 rounded-lg bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500 text-base"
+            style={{ minHeight: '48px' }}
+          />
+
+          {error && (
+            <p className="text-red-400 text-sm">{error}</p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading || !password}
+            className="w-full py-3 rounded-lg bg-white text-zinc-900 font-semibold text-base disabled:opacity-40 active:scale-95 transition-transform"
+            style={{ minHeight: '48px' }}
+          >
+            {loading ? 'Checking...' : 'Enter'}
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
