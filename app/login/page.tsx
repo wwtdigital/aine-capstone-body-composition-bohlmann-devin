@@ -35,10 +35,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-page flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-white mb-1">Body Composition Copilot</h1>
-        <p className="text-zinc-400 text-sm mb-8">Personal dashboard — enter password to continue</p>
+        <h1 className="text-2xl font-bold text-ink mb-1">Body Composition Copilot</h1>
+        <p className="text-ink3 text-sm mb-8">Personal dashboard — enter password to continue</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
@@ -47,18 +47,16 @@ export default function LoginPage() {
             onChange={e => setPassword(e.target.value)}
             placeholder="Password"
             autoFocus
-            className="w-full px-4 py-3 rounded-lg bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500 text-base"
+            className="w-full px-4 py-3 rounded-lg bg-card border border-line text-ink placeholder-ink4 focus:outline-none focus:border-linehi text-base"
             style={{ minHeight: '48px' }}
           />
 
-          {error && (
-            <p className="text-red-400 text-sm">{error}</p>
-          )}
+          {error && <p className="text-bad text-sm">{error}</p>}
 
           <button
             type="submit"
             disabled={loading || !password}
-            className="w-full py-3 rounded-lg bg-white text-zinc-900 font-semibold text-base disabled:opacity-40 active:scale-95 transition-transform"
+            className="w-full py-3 rounded-lg bg-brand text-page font-semibold text-base disabled:opacity-40 active:scale-95 transition-transform"
             style={{ minHeight: '48px' }}
           >
             {loading ? 'Checking...' : 'Enter'}

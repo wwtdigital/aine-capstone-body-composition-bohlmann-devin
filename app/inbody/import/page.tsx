@@ -134,27 +134,27 @@ export default function InBodyImportPage() {
 
   const accepted = records.filter(r => r.accepted && !r.error && r.reading_date)
 
-  const inputClass = 'w-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none border border-zinc-200 dark:border-zinc-700'
+  const inputClass = 'w-full bg-surface text-ink rounded-xl px-3 py-2 text-sm focus:outline-none border border-line focus:border-linehi'
 
   if (step === 'upload') {
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-24">
+      <div className="min-h-screen bg-page pb-24">
         <div className="px-4 pt-12 pb-6">
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Import PDFs</h1>
-          <p className="text-zinc-500 dark:text-zinc-500 text-sm">InBody report PDFs</p>
+          <h1 className="text-2xl font-bold text-ink tracking-tight">Import PDFs</h1>
+          <p className="text-ink3 text-sm">InBody report PDFs</p>
         </div>
 
-        <div className="px-4 flex-1 flex flex-col items-center justify-center">
+        <div className="px-4">
           <div
             onDragOver={e => { e.preventDefault(); setDragging(true) }}
             onDragLeave={() => setDragging(false)}
             onDrop={handleDrop}
             onClick={() => fileRef.current?.click()}
-            className={`w-full rounded-2xl border-2 border-dashed cursor-pointer transition-all flex flex-col items-center justify-center py-16 px-6 text-center ${dragging ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' : 'border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900'}`}
+            className={`w-full rounded-2xl border-2 border-dashed cursor-pointer transition-all flex flex-col items-center justify-center py-16 px-6 text-center ${dragging ? 'border-brand bg-brand/10' : 'border-line bg-card'}`}
           >
-            <Upload size={32} className="text-zinc-400 dark:text-zinc-600 mb-3" />
-            <p className="text-zinc-900 dark:text-white font-semibold mb-1">Drop PDF reports here</p>
-            <p className="text-zinc-500 dark:text-zinc-500 text-sm">or tap to choose files · multiple supported</p>
+            <Upload size={32} className="text-ink3 mb-3" />
+            <p className="text-ink font-semibold mb-1">Drop PDF reports here</p>
+            <p className="text-ink3 text-sm">or tap to choose files · multiple supported</p>
           </div>
           <input ref={fileRef} type="file" accept=".pdf,application/pdf" multiple className="hidden" onChange={handleFileInput} />
         </div>
@@ -164,33 +164,31 @@ export default function InBodyImportPage() {
 
   if (step === 'parsing') {
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col items-center justify-center gap-4 px-4">
-        <div className="w-8 h-8 border-2 border-zinc-900 dark:border-white border-t-transparent rounded-full animate-spin" />
-        <p className="text-zinc-900 dark:text-white text-lg font-medium">
-          Parsing {parseProgress.done} / {parseProgress.total}
-        </p>
-        <p className="text-zinc-500 dark:text-zinc-400 text-sm">Extracting fields with Claude...</p>
+      <div className="min-h-screen bg-page flex flex-col items-center justify-center gap-4 px-4">
+        <div className="w-8 h-8 border-2 border-brand border-t-transparent rounded-full animate-spin" />
+        <p className="text-ink text-lg font-medium">Parsing {parseProgress.done} / {parseProgress.total}</p>
+        <p className="text-ink3 text-sm">Extracting fields with Claude...</p>
       </div>
     )
   }
 
   if (step === 'preview' || step === 'saving') {
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-32">
+      <div className="min-h-screen bg-page pb-32">
         <div className="px-4 pt-12 pb-4">
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Review</h1>
-          <p className="text-zinc-500 dark:text-zinc-500 text-sm">{records.length} file{records.length !== 1 ? 's' : ''} parsed</p>
+          <h1 className="text-2xl font-bold text-ink tracking-tight">Review</h1>
+          <p className="text-ink3 text-sm">{records.length} file{records.length !== 1 ? 's' : ''} parsed</p>
         </div>
 
         <div className="px-4 space-y-3">
           {records.map((record, idx) => (
-            <div key={idx} className={`rounded-2xl border p-4 space-y-3 ${record.error ? 'border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/20' : record.accepted ? 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900' : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 opacity-50'}`}>
+            <div key={idx} className={`rounded-2xl border p-4 space-y-3 ${record.error ? 'border-bad/30 bg-bad/10' : record.accepted ? 'border-line bg-card' : 'border-line bg-card opacity-50'}`}>
               <div className="flex items-center justify-between">
-                <p className="text-zinc-500 dark:text-zinc-400 text-xs truncate flex-1 mr-2">{record.filename}</p>
+                <p className="text-ink3 text-xs truncate flex-1 mr-2">{record.filename}</p>
                 {!record.error && (
                   <button
                     onClick={() => toggleAccept(idx)}
-                    className={`shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${record.accepted ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400'}`}
+                    className={`shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${record.accepted ? 'bg-brand text-page' : 'bg-surface text-ink3'}`}
                     style={{ minHeight: '32px' }}
                   >
                     {record.accepted ? 'Accept' : 'Rejected'}
@@ -199,13 +197,13 @@ export default function InBodyImportPage() {
               </div>
 
               {record.error ? (
-                <p className="text-red-600 dark:text-red-400 text-sm">{record.error}</p>
+                <p className="text-bad text-sm">{record.error}</p>
               ) : (
                 <>
                   <div>
-                    <label className="text-zinc-500 dark:text-zinc-500 text-xs block mb-1">Date</label>
-                    <input type="date" value={record.reading_date ?? ''} onChange={e => updateField(idx, 'reading_date', e.target.value)} className={inputClass} style={{ minHeight: '40px' }} />
-                    {!record.reading_date && <p className="text-amber-600 dark:text-amber-500 text-xs mt-1">Date not found — enter manually to accept</p>}
+                    <label className="text-ink3 text-xs block mb-1">Date</label>
+                    <input type="date" value={record.reading_date ?? ''} onChange={e => updateField(idx, 'reading_date', e.target.value)} className={inputClass} style={{ minHeight: '40px', colorScheme: 'dark' }} />
+                    {!record.reading_date && <p className="text-warn text-xs mt-1">Date not found — enter manually to accept</p>}
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {[
@@ -216,7 +214,7 @@ export default function InBodyImportPage() {
                       { field: 'visceral_fat_level', label: 'Visceral Fat' },
                     ].map(({ field, label }) => (
                       <div key={field}>
-                        <label className="text-zinc-500 dark:text-zinc-500 text-xs block mb-1">{label}</label>
+                        <label className="text-ink3 text-xs block mb-1">{label}</label>
                         <input
                           type="number" step="0.1"
                           value={record[field as keyof ParsedRecord] as number ?? ''}
@@ -234,11 +232,11 @@ export default function InBodyImportPage() {
           ))}
         </div>
 
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-t border-zinc-200 dark:border-zinc-900">
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-page/95 backdrop-blur-md border-t border-line">
           <button
             onClick={handleConfirm}
             disabled={step === 'saving' || accepted.length === 0}
-            className="w-full py-4 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold text-base disabled:opacity-40 active:scale-95 transition-transform"
+            className="w-full py-4 rounded-2xl bg-brand text-page font-bold text-base disabled:opacity-40 active:scale-95 transition-transform"
             style={{ minHeight: '56px' }}
           >
             {step === 'saving' ? 'Saving...' : `Save ${accepted.length} reading${accepted.length !== 1 ? 's' : ''}`}
@@ -250,27 +248,27 @@ export default function InBodyImportPage() {
 
   if (step === 'done') {
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col items-center justify-center px-4 gap-6 pb-24">
+      <div className="min-h-screen bg-page flex flex-col items-center justify-center px-4 gap-6 pb-24">
         <div className="w-full max-w-sm space-y-4">
-          <h2 className="text-zinc-900 dark:text-white text-2xl font-bold">{saveResults.saved} reading{saveResults.saved !== 1 ? 's' : ''} saved</h2>
+          <h2 className="text-ink text-2xl font-bold">{saveResults.saved} reading{saveResults.saved !== 1 ? 's' : ''} saved</h2>
 
           {saveResults.duplicates.length > 0 && (
-            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-2xl p-4">
-              <p className="text-amber-700 dark:text-amber-400 text-sm font-semibold mb-2">Duplicates skipped ({saveResults.duplicates.length})</p>
-              {saveResults.duplicates.map((d, i) => <p key={i} className="text-amber-600 dark:text-amber-500 text-xs">{d}</p>)}
+            <div className="bg-warn/10 border border-warn/30 rounded-2xl p-4">
+              <p className="text-warn text-sm font-semibold mb-2">Duplicates skipped ({saveResults.duplicates.length})</p>
+              {saveResults.duplicates.map((d, i) => <p key={i} className="text-warn/80 text-xs">{d}</p>)}
             </div>
           )}
 
           {saveResults.errors.length > 0 && (
-            <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-2xl p-4">
-              <p className="text-red-600 dark:text-red-400 text-sm font-semibold mb-2">Errors ({saveResults.errors.length})</p>
-              {saveResults.errors.map((e, i) => <p key={i} className="text-red-600 dark:text-red-500 text-xs">{e}</p>)}
+            <div className="bg-bad/10 border border-bad/30 rounded-2xl p-4">
+              <p className="text-bad text-sm font-semibold mb-2">Errors ({saveResults.errors.length})</p>
+              {saveResults.errors.map((e, i) => <p key={i} className="text-bad/80 text-xs">{e}</p>)}
             </div>
           )}
 
           <button
             onClick={() => router.push('/month')}
-            className="w-full py-4 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold text-base"
+            className="w-full py-4 rounded-2xl bg-brand text-page font-bold text-base"
             style={{ minHeight: '56px' }}
           >
             Done

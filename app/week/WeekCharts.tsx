@@ -1,6 +1,5 @@
 'use client'
 
-import { useTheme } from 'next-themes'
 import {
   BarChart, Bar, XAxis, YAxis, ReferenceLine,
   ResponsiveContainer, Tooltip, Cell,
@@ -14,40 +13,32 @@ type Props = {
   proteinGoal: number
 }
 
+const AXIS = '#64748b'
+const TOOLTIP = {
+  contentStyle: { background: '#131822', border: '1px solid #1f2937', borderRadius: 10, color: '#f1f5f9' },
+  labelStyle: { color: '#94a3b8' },
+  itemStyle: { color: '#f1f5f9' },
+}
+const AXIS_PROPS = {
+  tick: { fill: AXIS, fontSize: 12 },
+  axisLine: false as const,
+  tickLine: false as const,
+}
+
 export default function WeekCharts({ days, calorieGoal, proteinGoal }: Props) {
-  const { resolvedTheme } = useTheme()
-  const dark = resolvedTheme !== 'light'
-
-  const axis = dark ? '#52525b' : '#a1a1aa'
-  const tooltipStyle = {
-    contentStyle: {
-      background: dark ? '#18181b' : '#ffffff',
-      border: `1px solid ${dark ? '#3f3f46' : '#e4e4e7'}`,
-      borderRadius: 10,
-      color: dark ? '#fff' : '#09090b',
-    },
-    labelStyle: { color: dark ? '#a1a1aa' : '#71717a' },
-    itemStyle: { color: dark ? '#fff' : '#09090b' },
-  }
-  const axisProps = {
-    tick: { fill: axis, fontSize: 12 },
-    axisLine: false as const,
-    tickLine: false as const,
-  }
-
   return (
     <div className="space-y-8">
       <div>
-        <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-3">Calories</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-ink3 mb-3">Calories</p>
         <ResponsiveContainer width="100%" height={180}>
           <BarChart data={days} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-            <XAxis dataKey="day" {...axisProps} />
-            <YAxis {...axisProps} />
-            <ReferenceLine y={calorieGoal} stroke="#3b82f6" strokeDasharray="4 4" strokeOpacity={0.6} />
-            <Tooltip {...tooltipStyle} />
+            <XAxis dataKey="day" {...AXIS_PROPS} />
+            <YAxis {...AXIS_PROPS} />
+            <ReferenceLine y={calorieGoal} stroke="#4a9eff" strokeDasharray="4 4" strokeOpacity={0.6} />
+            <Tooltip {...TOOLTIP} />
             <Bar dataKey="calories" radius={[5, 5, 0, 0]}>
               {days.map((d, i) => (
-                <Cell key={i} fill={d.calories >= calorieGoal ? '#3b82f6' : dark ? '#1e3a5f' : '#bfdbfe'} />
+                <Cell key={i} fill={d.calories >= calorieGoal ? '#4a9eff' : '#1a2030'} />
               ))}
             </Bar>
           </BarChart>
@@ -55,16 +46,16 @@ export default function WeekCharts({ days, calorieGoal, proteinGoal }: Props) {
       </div>
 
       <div>
-        <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-3">Protein (g)</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-ink3 mb-3">Protein (g)</p>
         <ResponsiveContainer width="100%" height={180}>
           <BarChart data={days} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-            <XAxis dataKey="day" {...axisProps} />
-            <YAxis {...axisProps} />
+            <XAxis dataKey="day" {...AXIS_PROPS} />
+            <YAxis {...AXIS_PROPS} />
             <ReferenceLine y={proteinGoal} stroke="#10b981" strokeDasharray="4 4" strokeOpacity={0.6} />
-            <Tooltip {...tooltipStyle} />
+            <Tooltip {...TOOLTIP} />
             <Bar dataKey="protein" radius={[5, 5, 0, 0]}>
               {days.map((d, i) => (
-                <Cell key={i} fill={d.protein >= proteinGoal ? '#10b981' : dark ? '#064e3b' : '#a7f3d0'} />
+                <Cell key={i} fill={d.protein >= proteinGoal ? '#10b981' : '#1a2030'} />
               ))}
             </Bar>
           </BarChart>

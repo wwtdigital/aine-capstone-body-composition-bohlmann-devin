@@ -38,30 +38,30 @@ export default async function WeekPage() {
     : 0
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-24">
+    <div className="min-h-screen bg-page pb-24">
       <div className="px-4 pt-12 pb-6">
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Week</h1>
-        <p className="text-zinc-500 dark:text-zinc-500 text-sm">Last 7 days</p>
+        <h1 className="text-2xl font-bold text-ink tracking-tight">Week</h1>
+        <p className="text-ink3 text-sm">Last 7 days</p>
       </div>
 
       <div className="px-4 space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4">
-            <p className="text-zinc-500 dark:text-zinc-500 text-xs font-medium uppercase tracking-wider mb-2">Avg Calories</p>
-            <p className="text-zinc-900 dark:text-white font-bold text-3xl tabular-nums">{avgCal > 0 ? avgCal.toLocaleString() : '—'}</p>
-            <p className="text-zinc-400 dark:text-zinc-600 text-xs mt-1">goal: {GOALS.daily_calories.toLocaleString()}</p>
+          <div className="bg-card rounded-2xl border border-line p-4">
+            <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-2">Avg Calories</p>
+            <p className="text-ink font-bold text-3xl tabular-nums">{avgCal > 0 ? avgCal.toLocaleString() : '—'}</p>
+            <p className="text-ink3 text-xs mt-1">goal: {GOALS.daily_calories.toLocaleString()}</p>
             {avgCal > 0 && (
-              <p className={`text-xs mt-1.5 font-semibold ${avgCal >= GOALS.daily_calories ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+              <p className={`text-xs mt-1.5 font-semibold ${avgCal >= GOALS.daily_calories ? 'text-ok' : 'text-warn'}`}>
                 {Math.round((avgCal / GOALS.daily_calories) * 100)}% of goal
               </p>
             )}
           </div>
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4">
-            <p className="text-zinc-500 dark:text-zinc-500 text-xs font-medium uppercase tracking-wider mb-2">Avg Protein</p>
-            <p className="text-zinc-900 dark:text-white font-bold text-3xl tabular-nums">{avgProt > 0 ? `${avgProt}g` : '—'}</p>
-            <p className="text-zinc-400 dark:text-zinc-600 text-xs mt-1">goal: {GOALS.daily_protein_g}g</p>
+          <div className="bg-card rounded-2xl border border-line p-4">
+            <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-2">Avg Protein</p>
+            <p className="text-ink font-bold text-3xl tabular-nums">{avgProt > 0 ? `${avgProt}g` : '—'}</p>
+            <p className="text-ink3 text-xs mt-1">goal: {GOALS.daily_protein_g}g</p>
             {avgProt > 0 && (
-              <p className={`text-xs mt-1.5 font-semibold ${avgProt >= GOALS.daily_protein_g ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+              <p className={`text-xs mt-1.5 font-semibold ${avgProt >= GOALS.daily_protein_g ? 'text-ok' : 'text-warn'}`}>
                 {Math.round((avgProt / GOALS.daily_protein_g) * 100)}% of goal
               </p>
             )}
@@ -69,38 +69,37 @@ export default async function WeekPage() {
         </div>
 
         {daysWithData.length === 0 ? (
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-10 text-center">
-            <p className="text-zinc-400 dark:text-zinc-600 text-sm">No meals logged this week</p>
+          <div className="bg-card rounded-2xl border border-line p-10 text-center">
+            <p className="text-ink3 text-sm">No meals logged this week</p>
           </div>
         ) : (
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4">
+          <div className="bg-card rounded-2xl border border-line p-4">
             <WeekCharts days={days} calorieGoal={GOALS.daily_calories} proteinGoal={GOALS.daily_protein_g} />
           </div>
         )}
 
-        {/* Day-by-day breakdown */}
         {daysWithData.length > 0 && (
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 divide-y divide-zinc-100 dark:divide-zinc-800">
+          <div className="bg-card rounded-2xl border border-line divide-y divide-line">
             {[...days].reverse().map((d, i) => (
               <div key={i} className="flex items-center justify-between px-4 py-3">
-                <span className="text-zinc-600 dark:text-zinc-400 text-sm w-10">{d.day}</span>
+                <span className="text-ink2 text-sm w-10">{d.day}</span>
                 {d.calories > 0 ? (
                   <>
                     <div className="flex-1 mx-3">
-                      <div className="h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-surface rounded-full overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-blue-500"
+                          className="h-full rounded-full bg-brand"
                           style={{ width: `${Math.min(100, (d.calories / GOALS.daily_calories) * 100)}%` }}
                         />
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className="text-zinc-900 dark:text-white text-sm font-semibold tabular-nums">{d.calories.toLocaleString()}</span>
-                      <span className="text-zinc-400 dark:text-zinc-600 text-xs ml-1">cal</span>
+                      <span className="text-ink text-sm font-semibold tabular-nums">{d.calories.toLocaleString()}</span>
+                      <span className="text-ink3 text-xs ml-1">cal</span>
                     </div>
                   </>
                 ) : (
-                  <span className="text-zinc-300 dark:text-zinc-700 text-sm flex-1 text-right">—</span>
+                  <span className="text-ink4 text-sm flex-1 text-right">—</span>
                 )}
               </div>
             ))}

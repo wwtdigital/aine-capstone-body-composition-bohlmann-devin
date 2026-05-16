@@ -148,23 +148,23 @@ export default function LogPage() {
 
   if (step === 'capture') {
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-24">
+      <div className="min-h-screen bg-page pb-24">
         <div className="px-4 pt-12 pb-6">
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Log Meal</h1>
-          <p className="text-zinc-500 dark:text-zinc-500 text-sm">Photo-based analysis</p>
+          <h1 className="text-2xl font-bold text-ink tracking-tight">Log Meal</h1>
+          <p className="text-ink3 text-sm">Photo-based analysis</p>
         </div>
 
         <div className="px-4">
           <label
             htmlFor="meal-photo"
-            className="flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 cursor-pointer active:scale-95 transition-transform"
+            className="flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed border-line bg-card cursor-pointer active:scale-95 transition-transform"
             style={{ minHeight: '260px' }}
           >
             <div className="flex flex-col items-center gap-3 py-12 px-6 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-3xl">📷</div>
+              <div className="w-16 h-16 rounded-2xl bg-surface flex items-center justify-center text-3xl">📷</div>
               <div>
-                <p className="text-zinc-900 dark:text-white font-semibold text-lg">Take a photo</p>
-                <p className="text-zinc-500 dark:text-zinc-500 text-sm mt-1">or choose from library</p>
+                <p className="text-ink font-semibold text-lg">Take a photo</p>
+                <p className="text-ink3 text-sm mt-1">or choose from library</p>
               </div>
             </div>
           </label>
@@ -176,9 +176,9 @@ export default function LogPage() {
 
   if (step === 'analyzing') {
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col pb-24">
+      <div className="min-h-screen bg-page flex flex-col pb-24">
         <div className="px-4 pt-12 pb-4">
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Analyzing</h1>
+          <h1 className="text-2xl font-bold text-ink tracking-tight">Analyzing</h1>
         </div>
         {preview && (
           <div className="px-4 mb-6">
@@ -186,8 +186,8 @@ export default function LogPage() {
           </div>
         )}
         <div className="flex-1 flex flex-col items-center justify-center gap-4 px-4">
-          <div className="w-8 h-8 border-2 border-zinc-900 dark:border-white border-t-transparent rounded-full animate-spin" />
-          <p className="text-zinc-700 dark:text-zinc-300 text-lg font-medium">{loadingText}</p>
+          <div className="w-8 h-8 border-2 border-brand border-t-transparent rounded-full animate-spin" />
+          <p className="text-ink2 text-lg font-medium">{loadingText}</p>
         </div>
       </div>
     )
@@ -195,15 +195,15 @@ export default function LogPage() {
 
   if (step === 'error') {
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col pb-24">
+      <div className="min-h-screen bg-page flex flex-col pb-24">
         <div className="px-4 pt-12 pb-6">
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Log Meal</h1>
+          <h1 className="text-2xl font-bold text-ink tracking-tight">Log Meal</h1>
         </div>
         <div className="flex-1 flex flex-col items-center justify-center px-4 gap-6">
-          <p className="text-red-500 dark:text-red-400 text-center">{errorMsg}</p>
+          <p className="text-bad text-center">{errorMsg}</p>
           <button
             onClick={() => { setStep('capture'); setPreview(null) }}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white font-semibold"
+            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-card border border-line text-ink font-semibold"
           >
             <RotateCcw size={16} />
             Try again
@@ -215,15 +215,15 @@ export default function LogPage() {
 
   if (step === 'confirm' || step === 'saving') {
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-32">
+      <div className="min-h-screen bg-page pb-32">
         <div className="flex items-center justify-between px-4 pt-12 pb-4">
           <div>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Confirm</h1>
-            <p className="text-zinc-500 dark:text-zinc-500 text-sm">{items.length} item{items.length !== 1 ? 's' : ''} detected</p>
+            <h1 className="text-2xl font-bold text-ink tracking-tight">Confirm</h1>
+            <p className="text-ink3 text-sm">{items.length} item{items.length !== 1 ? 's' : ''} detected</p>
           </div>
           <button
             onClick={() => setStep('capture')}
-            className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400 text-sm font-medium"
+            className="flex items-center gap-1.5 text-ink3 text-sm font-medium"
           >
             <RotateCcw size={14} />
             Retake
@@ -238,31 +238,31 @@ export default function LogPage() {
 
         <div className="px-4 mb-4 grid grid-cols-4 gap-2">
           {[
-            { label: 'Cal', value: Math.round(t.calories), color: 'text-blue-600 dark:text-blue-400' },
-            { label: 'Pro', value: `${Math.round(t.protein)}g`, color: 'text-emerald-600 dark:text-emerald-400' },
-            { label: 'Carb', value: `${Math.round(t.carbs)}g`, color: 'text-amber-600 dark:text-amber-400' },
-            { label: 'Fat', value: `${Math.round(t.fat)}g`, color: 'text-orange-600 dark:text-orange-400' },
+            { label: 'Cal', value: Math.round(t.calories), color: 'text-brand' },
+            { label: 'Pro', value: `${Math.round(t.protein)}g`, color: 'text-ok' },
+            { label: 'Carb', value: `${Math.round(t.carbs)}g`, color: 'text-warn' },
+            { label: 'Fat', value: `${Math.round(t.fat)}g`, color: 'text-nourish' },
           ].map(({ label, value, color }) => (
-            <div key={label} className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-3 text-center">
+            <div key={label} className="bg-card rounded-2xl border border-line p-3 text-center">
               <p className={`font-bold text-base tabular-nums ${color}`}>{value}</p>
-              <p className="text-zinc-400 dark:text-zinc-600 text-xs mt-0.5">{label}</p>
+              <p className="text-ink3 text-xs mt-0.5">{label}</p>
             </div>
           ))}
         </div>
 
         <div className="px-4 space-y-3">
           {items.map((item, idx) => (
-            <div key={idx} className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 space-y-3">
+            <div key={idx} className="bg-card rounded-2xl border border-line p-4 space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <input
                   type="text"
                   value={item.name}
                   onChange={e => updateItem(idx, 'name', e.target.value)}
-                  className="flex-1 bg-transparent text-zinc-900 dark:text-white font-semibold text-base focus:outline-none border-b border-zinc-200 dark:border-zinc-700 pb-1"
+                  className="flex-1 bg-transparent text-ink font-semibold text-base focus:outline-none border-b border-line pb-1"
                 />
                 <button
                   onClick={() => removeItem(idx)}
-                  className="text-zinc-400 dark:text-zinc-600 text-sm shrink-0 pt-1 w-8 h-8 flex items-center justify-center"
+                  className="text-ink3 text-sm shrink-0 pt-1 w-8 h-8 flex items-center justify-center"
                 >
                   ✕
                 </button>
@@ -272,38 +272,38 @@ export default function LogPage() {
                 value={item.portion}
                 onChange={e => updateItem(idx, 'portion', e.target.value)}
                 placeholder="Portion size"
-                className="w-full bg-transparent text-zinc-500 dark:text-zinc-400 text-sm focus:outline-none"
+                className="w-full bg-transparent text-ink3 text-sm focus:outline-none"
               />
               <div className="grid grid-cols-4 gap-2">
                 {(['calories', 'protein', 'carbs', 'fat'] as const).map(field => (
                   <div key={field}>
-                    <p className="text-zinc-400 dark:text-zinc-600 text-xs mb-1 text-center capitalize">
+                    <p className="text-ink3 text-xs mb-1 text-center capitalize">
                       {field === 'calories' ? 'Cal' : field === 'protein' ? 'Pro' : field === 'carbs' ? 'Carb' : 'Fat'}
                     </p>
                     <input
                       type="number"
                       value={item[field]}
                       onChange={e => updateItem(idx, field, e.target.value)}
-                      className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-lg px-2 py-1.5 text-zinc-900 dark:text-white text-sm focus:outline-none text-center"
+                      className="w-full bg-surface rounded-lg px-2 py-1.5 text-ink text-sm focus:outline-none text-center"
                       style={{ minHeight: '36px' }}
                     />
                   </div>
                 ))}
               </div>
               {item.confidence === 'low' && (
-                <p className="text-amber-600 dark:text-amber-500 text-xs">Low confidence — verify this item</p>
+                <p className="text-warn text-xs">Low confidence — verify this item</p>
               )}
             </div>
           ))}
         </div>
 
-        {notes && <p className="px-4 mt-3 text-zinc-500 dark:text-zinc-500 text-sm">{notes}</p>}
+        {notes && <p className="px-4 mt-3 text-ink3 text-sm">{notes}</p>}
 
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-t border-zinc-200 dark:border-zinc-900">
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-page/95 backdrop-blur-md border-t border-line">
           <button
             onClick={handleSave}
             disabled={step === 'saving' || items.length === 0}
-            className="w-full py-4 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold text-base disabled:opacity-40 active:scale-95 transition-transform"
+            className="w-full py-4 rounded-2xl bg-brand text-page font-bold text-base disabled:opacity-40 active:scale-95 transition-transform"
             style={{ minHeight: '56px' }}
           >
             {step === 'saving' ? 'Saving...' : `Save — ${Math.round(t.calories)} cal`}

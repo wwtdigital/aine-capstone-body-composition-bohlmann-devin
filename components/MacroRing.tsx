@@ -33,7 +33,7 @@ export default function MacroRing({
             cx={c} cy={c} r={r}
             fill="none"
             strokeWidth={strokeWidth}
-            className="stroke-zinc-200 dark:stroke-zinc-800"
+            stroke="#1a2030"
           />
           <circle
             cx={c} cy={c} r={r}
@@ -48,13 +48,13 @@ export default function MacroRing({
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-1">
-          <span className="text-zinc-900 dark:text-white font-bold tabular-nums" style={{ fontSize: size < 90 ? 13 : 15 }}>
+          <span className="text-ink font-bold tabular-nums" style={{ fontSize: size < 90 ? 13 : 15 }}>
             {valueDisplay}
           </span>
-          <span className="text-zinc-500 dark:text-zinc-500 text-xs mt-0.5">{label}</span>
+          <span className="text-ink3 text-xs mt-0.5">{label}</span>
         </div>
       </div>
-      <span className="text-zinc-400 dark:text-zinc-600 text-xs">/ {goalDisplay}</span>
+      <span className="text-ink3 text-xs">/ {goalDisplay}</span>
     </div>
   )
 }

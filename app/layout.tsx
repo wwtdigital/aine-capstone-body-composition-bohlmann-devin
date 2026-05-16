@@ -1,12 +1,20 @@
 import type { Metadata, Viewport } from 'next'
-import { Geist } from 'next/font/google'
-import { ThemeProvider } from 'next-themes'
+import { Inter, JetBrains_Mono } from 'next/font/google'
 import BottomNav from '@/components/BottomNav'
+import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration'
+import PwaInstallPrompt from '@/components/PwaInstallPrompt'
 import './globals.css'
 
-const geist = Geist({
-  variable: '--font-geist',
+const inter = Inter({
   subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+})
+
+const mono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
+  display: 'swap',
 })
 
 export const metadata: Metadata = {
@@ -25,10 +33,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: [
-    { media: '(prefers-color-scheme: dark)', color: '#09090b' },
-    { media: '(prefers-color-scheme: light)', color: '#fafafa' },
-  ],
+  themeColor: '#0a0d14',
 }
 
 export default function RootLayout({
@@ -37,12 +42,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${geist.variable} h-full`} suppressHydrationWarning>
-      <body className="min-h-full bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white antialiased">
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-          {children}
-          <BottomNav />
-        </ThemeProvider>
+    <html lang="en" className={`${inter.variable} ${mono.variable} h-full`}>
+      <body className="min-h-full bg-page text-ink antialiased">
+        <ServiceWorkerRegistration />
+        <PwaInstallPrompt />
+        {children}
+        <BottomNav />
       </body>
     </html>
   )

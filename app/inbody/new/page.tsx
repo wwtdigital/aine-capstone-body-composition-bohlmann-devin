@@ -54,25 +54,25 @@ export default function InBodyNewPage() {
     }
   }
 
-  const inputClass = 'w-full px-4 py-3 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white text-base focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors'
+  const inputClass = 'w-full px-4 py-3 rounded-xl bg-card border border-line text-ink text-base focus:outline-none focus:border-linehi transition-colors'
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-24">
+    <div className="min-h-screen bg-page pb-24">
       <div className="px-4 pt-12 pb-6">
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">New Reading</h1>
-        <p className="text-zinc-500 dark:text-zinc-500 text-sm">InBody measurement</p>
+        <h1 className="text-2xl font-bold text-ink tracking-tight">New Reading</h1>
+        <p className="text-ink3 text-sm">InBody measurement</p>
       </div>
 
       <form onSubmit={handleSubmit} className="px-4 space-y-3">
         <div>
-          <label className="text-zinc-500 dark:text-zinc-500 text-xs font-medium uppercase tracking-wider block mb-2">Date</label>
+          <label className="text-ink3 text-xs font-semibold uppercase tracking-wider block mb-2">Date</label>
           <input
             type="date"
             value={fields.reading_date}
             onChange={e => set('reading_date', e.target.value)}
             required
             className={inputClass}
-            style={{ minHeight: '48px' }}
+            style={{ minHeight: '48px', colorScheme: 'dark' }}
           />
         </div>
 
@@ -84,7 +84,7 @@ export default function InBodyNewPage() {
           { field: 'visceral_fat_level', label: 'Visceral Fat Level' },
         ].map(({ field, label }) => (
           <div key={field}>
-            <label className="text-zinc-500 dark:text-zinc-500 text-xs font-medium uppercase tracking-wider block mb-2">{label}</label>
+            <label className="text-ink3 text-xs font-semibold uppercase tracking-wider block mb-2">{label}</label>
             <input
               type="number"
               step="0.1"
@@ -97,12 +97,12 @@ export default function InBodyNewPage() {
           </div>
         ))}
 
-        {error && <p className="text-red-500 dark:text-red-400 text-sm">{error}</p>}
+        {error && <p className="text-bad text-sm">{error}</p>}
 
         <button
           type="submit"
           disabled={saving || !fields.reading_date}
-          className="w-full py-4 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold text-base disabled:opacity-40 active:scale-95 transition-transform mt-2"
+          className="w-full py-4 rounded-2xl bg-brand text-page font-bold text-base disabled:opacity-40 active:scale-95 transition-transform mt-2"
           style={{ minHeight: '56px' }}
         >
           {saving ? 'Saving...' : 'Save Reading'}

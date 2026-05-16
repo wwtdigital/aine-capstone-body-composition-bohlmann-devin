@@ -3,7 +3,6 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Activity, CheckCircle, AlertCircle, RefreshCw, Unlink, ExternalLink, Zap } from 'lucide-react'
-import ThemeToggle from '@/components/ThemeToggle'
 
 type WhoopDay = {
   date: string
@@ -81,51 +80,47 @@ function SettingsContent() {
   }
 
   function recoveryColor(score: number | null) {
-    if (score == null) return 'text-zinc-400 dark:text-zinc-600'
-    if (score >= 67) return 'text-emerald-600 dark:text-emerald-400'
-    if (score >= 34) return 'text-amber-600 dark:text-amber-400'
-    return 'text-red-600 dark:text-red-400'
+    if (score == null) return 'text-ink3'
+    if (score >= 67) return 'text-ok'
+    if (score >= 34) return 'text-warn'
+    return 'text-bad'
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-24">
-      <div className="flex items-center justify-between px-4 pt-12 pb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Settings</h1>
-          <p className="text-zinc-500 dark:text-zinc-500 text-sm">Integrations & preferences</p>
-        </div>
-        <ThemeToggle />
+    <div className="min-h-screen bg-page pb-24">
+      <div className="px-4 pt-12 pb-6">
+        <h1 className="text-2xl font-bold text-ink tracking-tight">Settings</h1>
+        <p className="text-ink3 text-sm">Integrations & preferences</p>
       </div>
 
       <div className="px-4 space-y-4">
-        {/* OAuth result banner */}
         {banner === 'connected' && (
-          <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 rounded-2xl p-4">
-            <CheckCircle size={18} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <p className="text-emerald-700 dark:text-emerald-400 text-sm font-medium">Whoop connected! Sync to import your data.</p>
+          <div className="flex items-center gap-3 bg-ok/10 border border-ok/30 rounded-2xl p-4">
+            <CheckCircle size={18} className="text-ok shrink-0" />
+            <p className="text-ok text-sm font-medium">Whoop connected! Sync to import your data.</p>
           </div>
         )}
         {banner === 'error' && (
-          <div className="flex items-center gap-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-2xl p-4">
-            <AlertCircle size={18} className="text-red-600 dark:text-red-400 shrink-0" />
-            <p className="text-red-700 dark:text-red-400 text-sm font-medium">Whoop connection failed. Try again.</p>
+          <div className="flex items-center gap-3 bg-bad/10 border border-bad/30 rounded-2xl p-4">
+            <AlertCircle size={18} className="text-bad shrink-0" />
+            <p className="text-bad text-sm font-medium">Whoop connection failed. Try again.</p>
           </div>
         )}
 
         {/* Whoop card */}
-        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800">
-          <div className="p-4 border-b border-zinc-100 dark:border-zinc-800">
+        <div className="bg-card rounded-2xl border border-line">
+          <div className="p-4 border-b border-line">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/40 flex items-center justify-center">
-                <Activity size={20} className="text-red-600 dark:text-red-400" />
+              <div className="w-10 h-10 rounded-xl bg-bad/10 flex items-center justify-center">
+                <Activity size={20} className="text-bad" />
               </div>
               <div className="flex-1">
-                <p className="text-zinc-900 dark:text-white font-semibold">Whoop</p>
-                <p className="text-zinc-500 dark:text-zinc-500 text-xs">Recovery · HRV · Strain · Sleep</p>
+                <p className="text-ink font-semibold">Whoop</p>
+                <p className="text-ink3 text-xs">Recovery · HRV · Strain · Sleep</p>
               </div>
               {connected === true && (
-                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                <span className="flex items-center gap-1 text-ok text-xs font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-ok inline-block" />
                   Connected
                 </span>
               )}
@@ -134,13 +129,13 @@ function SettingsContent() {
 
           <div className="p-4 space-y-3">
             {connected === null && (
-              <div className="h-10 bg-zinc-100 dark:bg-zinc-800 rounded-xl animate-pulse" />
+              <div className="h-10 bg-surface rounded-xl animate-pulse" />
             )}
 
             {connected === false && (
               <a
                 href="/api/whoop/auth"
-                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold text-sm active:scale-95 transition-transform"
+                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-brand text-page font-semibold text-sm active:scale-95 transition-transform"
               >
                 <ExternalLink size={15} />
                 Connect Whoop
@@ -152,7 +147,7 @@ function SettingsContent() {
                 <button
                   onClick={handleSync}
                   disabled={syncState === 'syncing'}
-                  className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold text-sm disabled:opacity-50 active:scale-95 transition-transform"
+                  className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-brand text-page font-semibold text-sm disabled:opacity-50 active:scale-95 transition-transform"
                 >
                   {syncState === 'syncing' ? (
                     <><RefreshCw size={15} className="animate-spin" />Syncing...</>
@@ -162,17 +157,17 @@ function SettingsContent() {
                 </button>
 
                 {syncState === 'done' && (
-                  <p className="text-emerald-600 dark:text-emerald-400 text-xs text-center font-medium">
+                  <p className="text-ok text-xs text-center font-medium">
                     {syncCount} day{syncCount !== 1 ? 's' : ''} synced
                   </p>
                 )}
                 {syncState === 'error' && (
-                  <p className="text-red-600 dark:text-red-400 text-xs text-center">{syncError}</p>
+                  <p className="text-bad text-xs text-center">{syncError}</p>
                 )}
 
                 <button
                   onClick={handleDisconnect}
-                  className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-zinc-500 dark:text-zinc-500 text-sm font-medium hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                  className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-ink3 text-sm font-medium hover:text-bad transition-colors"
                 >
                   <Unlink size={14} />
                   Disconnect
@@ -182,14 +177,14 @@ function SettingsContent() {
           </div>
         </div>
 
-        {/* Whoop recent data */}
+        {/* Recent Whoop data */}
         {whoopData.length > 0 && (
           <div>
-            <p className="text-zinc-500 dark:text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-2 px-1">Recent Whoop Data</p>
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 divide-y divide-zinc-100 dark:divide-zinc-800">
+            <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-2 px-1">Recent Whoop Data</p>
+            <div className="bg-card rounded-2xl border border-line divide-y divide-line">
               {whoopData.slice(0, 7).map(day => (
                 <div key={day.date} className="flex items-center px-4 py-3 gap-3">
-                  <p className="text-zinc-500 dark:text-zinc-500 text-xs w-16 shrink-0">
+                  <p className="text-ink3 text-xs w-16 shrink-0">
                     {new Date(day.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </p>
                   <div className="flex-1 grid grid-cols-4 gap-1 text-center">
@@ -197,25 +192,25 @@ function SettingsContent() {
                       <p className={`text-sm font-bold tabular-nums ${recoveryColor(day.recovery_score)}`}>
                         {day.recovery_score ?? '—'}
                       </p>
-                      <p className="text-zinc-400 dark:text-zinc-600 text-xs">rec</p>
+                      <p className="text-ink3 text-xs">rec</p>
                     </div>
                     <div>
-                      <p className="text-zinc-900 dark:text-white text-sm font-semibold tabular-nums">
+                      <p className="text-ink text-sm font-semibold tabular-nums">
                         {day.strain?.toFixed(1) ?? '—'}
                       </p>
-                      <p className="text-zinc-400 dark:text-zinc-600 text-xs">strain</p>
+                      <p className="text-ink3 text-xs">strain</p>
                     </div>
                     <div>
-                      <p className="text-zinc-900 dark:text-white text-sm font-semibold tabular-nums">
+                      <p className="text-ink text-sm font-semibold tabular-nums">
                         {day.hrv_ms?.toFixed(0) ?? '—'}
                       </p>
-                      <p className="text-zinc-400 dark:text-zinc-600 text-xs">hrv</p>
+                      <p className="text-ink3 text-xs">hrv</p>
                     </div>
                     <div>
-                      <p className="text-zinc-900 dark:text-white text-sm font-semibold tabular-nums">
+                      <p className="text-ink text-sm font-semibold tabular-nums">
                         {day.sleep_minutes != null ? `${Math.floor(day.sleep_minutes / 60)}h${day.sleep_minutes % 60}m` : '—'}
                       </p>
-                      <p className="text-zinc-400 dark:text-zinc-600 text-xs">sleep</p>
+                      <p className="text-ink3 text-xs">sleep</p>
                     </div>
                   </div>
                 </div>
@@ -224,10 +219,10 @@ function SettingsContent() {
           </div>
         )}
 
-        {/* Goals summary */}
+        {/* Goals */}
         <div>
-          <p className="text-zinc-500 dark:text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-2 px-1">Goals</p>
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 divide-y divide-zinc-100 dark:divide-zinc-800">
+          <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-2 px-1">Goals</p>
+          <div className="bg-card rounded-2xl border border-line divide-y divide-line">
             {[
               { label: 'Target Weight', value: '81.6 kg (180 lbs)' },
               { label: 'Target Body Fat', value: '12%' },
@@ -235,8 +230,8 @@ function SettingsContent() {
               { label: 'Daily Protein', value: '200g' },
             ].map(({ label, value }) => (
               <div key={label} className="flex items-center justify-between px-4 py-3.5">
-                <p className="text-zinc-600 dark:text-zinc-400 text-sm">{label}</p>
-                <p className="text-zinc-900 dark:text-white text-sm font-semibold">{value}</p>
+                <p className="text-ink2 text-sm">{label}</p>
+                <p className="text-ink text-sm font-semibold">{value}</p>
               </div>
             ))}
           </div>
