@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { db } from '@/lib/db'
 import { GOALS } from '@/lib/goals'
 import WeekCharts from './WeekCharts'
@@ -6,6 +5,7 @@ import WeekCharts from './WeekCharts'
 export const revalidate = 0
 
 type DayRow = { day: string; calories: number; protein: number }
+type DayData = { day: string; calories: number; protein: number }
 
 export default async function WeekPage() {
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
@@ -30,34 +30,38 @@ export default async function WeekPage() {
   }
 
   const daysWithData = days.filter(d => d.calories > 0)
-  const avgCal = daysWithData.length > 0 ? Math.round(daysWithData.reduce((s, d) => s + d.calories, 0) / daysWithData.length) : 0
-  const avgProt = daysWithData.length > 0 ? Math.round(daysWithData.reduce((s, d) => s + d.protein, 0) / daysWithData.length) : 0
+  const avgCal = daysWithData.length > 0
+    ? Math.round(daysWithData.reduce((s, d) => s + d.calories, 0) / daysWithData.length)
+    : 0
+  const avgProt = daysWithData.length > 0
+    ? Math.round(daysWithData.reduce((s, d) => s + d.protein, 0) / daysWithData.length)
+    : 0
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex flex-col pb-10">
-      <div className="flex items-center gap-3 px-4 pt-10 pb-6">
-        <Link href="/" className="text-zinc-400 text-sm">← Home</Link>
-        <h1 className="text-xl font-bold text-white">Week</h1>
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-24">
+      <div className="px-4 pt-12 pb-6">
+        <h1 className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Week</h1>
+        <p className="text-zinc-500 dark:text-zinc-500 text-sm">Last 7 days</p>
       </div>
 
-      <div className="px-4 space-y-6">
+      <div className="px-4 space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-zinc-900 rounded-xl p-4">
-            <p className="text-zinc-400 text-xs mb-1">Avg Calories</p>
-            <p className="text-white font-bold text-2xl">{avgCal > 0 ? avgCal : '—'}</p>
-            <p className="text-zinc-500 text-xs">goal: {GOALS.daily_calories}</p>
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4">
+            <p className="text-zinc-500 dark:text-zinc-500 text-xs font-medium uppercase tracking-wider mb-2">Avg Calories</p>
+            <p className="text-zinc-900 dark:text-white font-bold text-3xl tabular-nums">{avgCal > 0 ? avgCal.toLocaleString() : '—'}</p>
+            <p className="text-zinc-400 dark:text-zinc-600 text-xs mt-1">goal: {GOALS.daily_calories.toLocaleString()}</p>
             {avgCal > 0 && (
-              <p className={`text-xs mt-1 font-medium ${avgCal >= GOALS.daily_calories ? 'text-emerald-400' : 'text-amber-400'}`}>
+              <p className={`text-xs mt-1.5 font-semibold ${avgCal >= GOALS.daily_calories ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
                 {Math.round((avgCal / GOALS.daily_calories) * 100)}% of goal
               </p>
             )}
           </div>
-          <div className="bg-zinc-900 rounded-xl p-4">
-            <p className="text-zinc-400 text-xs mb-1">Avg Protein</p>
-            <p className="text-white font-bold text-2xl">{avgProt > 0 ? `${avgProt}g` : '—'}</p>
-            <p className="text-zinc-500 text-xs">goal: {GOALS.daily_protein_g}g</p>
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4">
+            <p className="text-zinc-500 dark:text-zinc-500 text-xs font-medium uppercase tracking-wider mb-2">Avg Protein</p>
+            <p className="text-zinc-900 dark:text-white font-bold text-3xl tabular-nums">{avgProt > 0 ? `${avgProt}g` : '—'}</p>
+            <p className="text-zinc-400 dark:text-zinc-600 text-xs mt-1">goal: {GOALS.daily_protein_g}g</p>
             {avgProt > 0 && (
-              <p className={`text-xs mt-1 font-medium ${avgProt >= GOALS.daily_protein_g ? 'text-emerald-400' : 'text-amber-400'}`}>
+              <p className={`text-xs mt-1.5 font-semibold ${avgProt >= GOALS.daily_protein_g ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
                 {Math.round((avgProt / GOALS.daily_protein_g) * 100)}% of goal
               </p>
             )}
@@ -65,13 +69,44 @@ export default async function WeekPage() {
         </div>
 
         {daysWithData.length === 0 ? (
-          <p className="text-zinc-500 text-sm text-center py-12">No meals logged this week.</p>
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-10 text-center">
+            <p className="text-zinc-400 dark:text-zinc-600 text-sm">No meals logged this week</p>
+          </div>
         ) : (
-          <WeekCharts days={days} calorieGoal={GOALS.daily_calories} proteinGoal={GOALS.daily_protein_g} />
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4">
+            <WeekCharts days={days} calorieGoal={GOALS.daily_calories} proteinGoal={GOALS.daily_protein_g} />
+          </div>
+        )}
+
+        {/* Day-by-day breakdown */}
+        {daysWithData.length > 0 && (
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 divide-y divide-zinc-100 dark:divide-zinc-800">
+            {[...days].reverse().map((d, i) => (
+              <div key={i} className="flex items-center justify-between px-4 py-3">
+                <span className="text-zinc-600 dark:text-zinc-400 text-sm w-10">{d.day}</span>
+                {d.calories > 0 ? (
+                  <>
+                    <div className="flex-1 mx-3">
+                      <div className="h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-blue-500"
+                          style={{ width: `${Math.min(100, (d.calories / GOALS.daily_calories) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-zinc-900 dark:text-white text-sm font-semibold tabular-nums">{d.calories.toLocaleString()}</span>
+                      <span className="text-zinc-400 dark:text-zinc-600 text-xs ml-1">cal</span>
+                    </div>
+                  </>
+                ) : (
+                  <span className="text-zinc-300 dark:text-zinc-700 text-sm flex-1 text-right">—</span>
+                )}
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
   )
 }
-
-type DayData = { day: string; calories: number; protein: number }

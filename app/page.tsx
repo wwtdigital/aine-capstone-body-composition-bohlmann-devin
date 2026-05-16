@@ -1,130 +1,202 @@
-import Link from 'next/link'
 import { db } from '@/lib/db'
 import { GOALS } from '@/lib/goals'
+import Link from 'next/link'
+import MacroRing from '@/components/MacroRing'
+import ThemeToggle from '@/components/ThemeToggle'
 
 export const revalidate = 0
 
-type NutritionRow = { cal: number; prot: number }
+type NutritionRow = { cal: number; prot: number; carbs: number; fat: number }
 type InBodyRow = { reading_date: number; weight_kg: number | null; body_fat_pct: number | null; lean_mass_kg: number | null }
+type MealRow = { id: string; logged_at: number; total_calories: number; total_protein: number; items_json: string; photo_url: string | null }
 
-export default async function Home() {
+export default async function Today() {
   const startOfToday = new Date()
   startOfToday.setUTCHours(0, 0, 0, 0)
   const todayStart = startOfToday.getTime()
 
-  const [nutritionResult, inbodyResult] = await Promise.all([
+  const [nutritionResult, inbodyResult, mealsResult] = await Promise.all([
     db.execute({
-      sql: `SELECT COALESCE(SUM(total_calories), 0) as cal, COALESCE(SUM(total_protein), 0) as prot FROM meals WHERE user_id = 'will' AND logged_at >= ?`,
+      sql: `SELECT COALESCE(SUM(total_calories),0) as cal, COALESCE(SUM(total_protein),0) as prot, COALESCE(SUM(total_carbs),0) as carbs, COALESCE(SUM(total_fat),0) as fat FROM meals WHERE user_id = 'will' AND logged_at >= ?`,
       args: [todayStart],
     }),
     db.execute({
       sql: `SELECT reading_date, weight_kg, body_fat_pct, lean_mass_kg FROM inbody_readings WHERE user_id = 'will' ORDER BY reading_date DESC LIMIT 1`,
       args: [],
     }),
+    db.execute({
+      sql: `SELECT id, logged_at, total_calories, total_protein, items_json, photo_url FROM meals WHERE user_id = 'will' AND logged_at >= ? ORDER BY logged_at DESC LIMIT 8`,
+      args: [todayStart],
+    }),
   ])
 
-  const nutrition = nutritionResult.rows[0] as unknown as NutritionRow
+  const n = nutritionResult.rows[0] as unknown as NutritionRow
   const latest = inbodyResult.rows[0] as unknown as InBodyRow | undefined
+  const meals = mealsResult.rows as unknown as MealRow[]
 
-  const calPct = Math.min(100, Math.round((nutrition.cal / GOALS.daily_calories) * 100))
-  const protPct = Math.min(100, Math.round((nutrition.prot / GOALS.daily_protein_g) * 100))
-
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex flex-col pb-10">
-      <div className="px-4 pt-12 pb-2">
-        <h1 className="text-2xl font-bold text-white">Body Comp</h1>
-        <p className="text-zinc-400 text-sm">{today}</p>
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-24">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 pt-12 pb-2">
+        <div>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Today</h1>
+          <p className="text-zinc-500 dark:text-zinc-500 text-sm">{today}</p>
+        </div>
+        <ThemeToggle />
       </div>
 
-      {/* Today's nutrition */}
-      <div className="px-4 mt-6">
-        <p className="text-zinc-500 text-xs uppercase tracking-wider mb-3">Today</p>
-        <div className="bg-zinc-900 rounded-xl p-4 space-y-4">
-          <div>
-            <div className="flex justify-between mb-1.5">
-              <span className="text-zinc-400 text-sm">Calories</span>
-              <span className="text-white text-sm font-semibold">
-                {Math.round(nutrition.cal)} <span className="text-zinc-500 font-normal">/ {GOALS.daily_calories}</span>
-              </span>
+      {/* Macro rings */}
+      <div className="mx-4 mt-5 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-5">
+        <div className="flex items-center justify-around mb-4">
+          <MacroRing
+            value={Math.round(n.cal)}
+            max={GOALS.daily_calories}
+            color="#3b82f6"
+            label="cal"
+            valueDisplay={Math.round(n.cal).toLocaleString()}
+            goalDisplay={GOALS.daily_calories.toLocaleString()}
+          />
+          <MacroRing
+            value={Math.round(n.prot)}
+            max={GOALS.daily_protein_g}
+            color="#10b981"
+            label="protein"
+            valueDisplay={`${Math.round(n.prot)}g`}
+            goalDisplay={`${GOALS.daily_protein_g}g`}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+          {[
+            { label: 'Carbs', value: Math.round(n.carbs), unit: 'g', color: 'text-amber-600 dark:text-amber-400' },
+            { label: 'Fat', value: Math.round(n.fat), unit: 'g', color: 'text-orange-600 dark:text-orange-400' },
+          ].map(({ label, value, unit, color }) => (
+            <div key={label} className="text-center py-1">
+              <span className={`text-lg font-bold tabular-nums ${color}`}>{value}<span className="text-sm font-normal">{unit}</span></span>
+              <p className="text-zinc-500 dark:text-zinc-600 text-xs mt-0.5">{label}</p>
             </div>
-            <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-              <div className="h-full bg-blue-500 rounded-full" style={{ width: `${calPct}%` }} />
-            </div>
-          </div>
-          <div>
-            <div className="flex justify-between mb-1.5">
-              <span className="text-zinc-400 text-sm">Protein</span>
-              <span className="text-white text-sm font-semibold">
-                {Math.round(nutrition.prot)}g <span className="text-zinc-500 font-normal">/ {GOALS.daily_protein_g}g</span>
-              </span>
-            </div>
-            <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-              <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${protPct}%` }} />
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
       {/* Body comp snapshot */}
       {latest && (
-        <div className="px-4 mt-5">
-          <p className="text-zinc-500 text-xs uppercase tracking-wider mb-3">Body Composition</p>
-          <div className="bg-zinc-900 rounded-xl p-4">
-            <p className="text-zinc-500 text-xs mb-3">
-              {new Date(latest.reading_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-            </p>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div>
-                <p className="text-white font-bold text-lg">{latest.weight_kg?.toFixed(1) ?? '—'}</p>
-                <p className="text-zinc-500 text-xs">kg</p>
-                {latest.weight_kg != null && (
-                  <p className={`text-xs mt-1 font-medium ${latest.weight_kg <= GOALS.weight_kg ? 'text-emerald-400' : 'text-amber-400'}`}>
-                    {latest.weight_kg > GOALS.weight_kg ? '+' : ''}{(latest.weight_kg - GOALS.weight_kg).toFixed(1)} to goal
-                  </p>
-                )}
-              </div>
-              <div>
-                <p className="text-white font-bold text-lg">{latest.body_fat_pct?.toFixed(1) ?? '—'}%</p>
-                <p className="text-zinc-500 text-xs">body fat</p>
-                {latest.body_fat_pct != null && (
-                  <p className={`text-xs mt-1 font-medium ${latest.body_fat_pct <= GOALS.body_fat_pct ? 'text-emerald-400' : 'text-amber-400'}`}>
-                    {latest.body_fat_pct > GOALS.body_fat_pct ? '+' : ''}{(latest.body_fat_pct - GOALS.body_fat_pct).toFixed(1)}% to goal
-                  </p>
-                )}
-              </div>
-              <div>
-                <p className="text-white font-bold text-lg">{latest.lean_mass_kg?.toFixed(1) ?? '—'}</p>
-                <p className="text-zinc-500 text-xs">lean kg</p>
-              </div>
+        <div className="mx-4 mt-4 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-500 uppercase tracking-wider">Body Comp</span>
+            <span className="text-xs text-zinc-400 dark:text-zinc-600">
+              {new Date(latest.reading_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <StatBlock
+              value={latest.weight_kg?.toFixed(1) ?? '—'}
+              unit="kg"
+              delta={latest.weight_kg != null ? (latest.weight_kg - GOALS.weight_kg) : null}
+              label="Weight"
+              positiveIsGood={false}
+            />
+            <StatBlock
+              value={latest.body_fat_pct?.toFixed(1) ?? '—'}
+              unit="%"
+              delta={latest.body_fat_pct != null ? (latest.body_fat_pct - GOALS.body_fat_pct) : null}
+              label="Body Fat"
+              positiveIsGood={false}
+            />
+            <div className="text-center">
+              <p className="text-zinc-900 dark:text-white font-bold text-xl tabular-nums leading-tight">
+                {latest.lean_mass_kg?.toFixed(1) ?? '—'}
+              </p>
+              <p className="text-zinc-400 dark:text-zinc-500 text-xs mt-0.5">kg lean</p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Nav */}
-      <div className="px-4 mt-6 space-y-3">
-        {[
-          { href: '/log', title: 'Log Meal', sub: 'Photo analysis' },
-          { href: '/inbody', title: 'InBody', sub: 'Body comp readings' },
-          { href: '/week', title: 'Week', sub: '7-day nutrition' },
-          { href: '/month', title: 'Month', sub: 'Body comp trends' },
-        ].map(({ href, title, sub }) => (
-          <Link
-            key={href}
-            href={href}
-            className="flex items-center justify-between p-4 rounded-xl bg-zinc-900 border border-zinc-800 active:scale-95 transition-transform"
-            style={{ minHeight: '60px' }}
-          >
-            <div>
-              <p className="text-white font-semibold">{title}</p>
-              <p className="text-zinc-400 text-sm">{sub}</p>
-            </div>
-            <span className="text-zinc-500 text-xl">→</span>
-          </Link>
-        ))}
+      {/* Today's meals */}
+      <div className="mx-4 mt-4">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-500 uppercase tracking-wider">Meals</span>
+          <Link href="/log" className="text-xs font-semibold text-blue-600 dark:text-blue-400">+ Log meal</Link>
+        </div>
+
+        {meals.length === 0 ? (
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 text-center">
+            <p className="text-zinc-400 dark:text-zinc-600 text-sm">Nothing logged yet today</p>
+            <Link
+              href="/log"
+              className="mt-3 inline-flex items-center gap-1.5 text-blue-600 dark:text-blue-400 text-sm font-semibold"
+            >
+              Take a photo →
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {meals.map(meal => {
+              let firstItem = ''
+              try {
+                const items = JSON.parse(meal.items_json)
+                firstItem = items[0]?.name ?? ''
+                if (items.length > 1) firstItem += ` +${items.length - 1} more`
+              } catch {}
+              const time = new Date(meal.logged_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+              return (
+                <div key={meal.id} className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-3.5 flex items-center gap-3">
+                  {meal.photo_url && (
+                    <img src={meal.photo_url} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-zinc-900 dark:text-white text-sm font-medium truncate">{firstItem || 'Meal'}</p>
+                    <p className="text-zinc-400 dark:text-zinc-600 text-xs">{time}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-zinc-900 dark:text-white text-sm font-bold tabular-nums">{Math.round(meal.total_calories)}</p>
+                    <p className="text-zinc-400 dark:text-zinc-600 text-xs">cal</p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
+    </div>
+  )
+}
+
+function StatBlock({
+  value,
+  unit,
+  delta,
+  label,
+  positiveIsGood,
+}: {
+  value: string
+  unit: string
+  delta: number | null
+  label: string
+  positiveIsGood: boolean
+}) {
+  const isPositive = delta != null && delta > 0
+  const deltaColor =
+    delta == null
+      ? ''
+      : (isPositive === positiveIsGood)
+      ? 'text-emerald-600 dark:text-emerald-400'
+      : 'text-amber-600 dark:text-amber-400'
+
+  return (
+    <div className="text-center">
+      <p className="text-zinc-900 dark:text-white font-bold text-xl tabular-nums leading-tight">
+        {value}<span className="text-zinc-400 dark:text-zinc-600 text-sm font-normal">{unit}</span>
+      </p>
+      <p className="text-zinc-400 dark:text-zinc-500 text-xs mt-0.5">{label}</p>
+      {delta != null && (
+        <p className={`text-xs font-semibold mt-0.5 ${deltaColor}`}>
+          {delta > 0 ? '+' : ''}{delta.toFixed(1)}{unit} to goal
+        </p>
+      )}
     </div>
   )
 }

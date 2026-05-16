@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { RotateCcw } from 'lucide-react'
 
 type MealItem = {
   name: string
@@ -31,32 +31,18 @@ async function resizeAndEncode(file: File): Promise<{ base64: string; mediaType:
       const MAX = 1200
       let { width, height } = img
       if (width > MAX || height > MAX) {
-        if (width > height) {
-          height = Math.round((height * MAX) / width)
-          width = MAX
-        } else {
-          width = Math.round((width * MAX) / height)
-          height = MAX
-        }
+        if (width > height) { height = Math.round((height * MAX) / width); width = MAX }
+        else { width = Math.round((width * MAX) / height); height = MAX }
       }
       const canvas = document.createElement('canvas')
-      canvas.width = width
-      canvas.height = height
-      const ctx = canvas.getContext('2d')!
-      ctx.drawImage(img, 0, 0, width, height)
+      canvas.width = width; canvas.height = height
+      canvas.getContext('2d')!.drawImage(img, 0, 0, width, height)
       URL.revokeObjectURL(url)
-      canvas.toBlob(
-        (blob) => {
-          const reader = new FileReader()
-          reader.onload = () => {
-            const dataUrl = reader.result as string
-            resolve({ base64: dataUrl.split(',')[1], mediaType: 'image/jpeg' })
-          }
-          reader.readAsDataURL(blob!)
-        },
-        'image/jpeg',
-        0.85,
-      )
+      canvas.toBlob((blob) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve({ base64: (reader.result as string).split(',')[1], mediaType: 'image/jpeg' })
+        reader.readAsDataURL(blob!)
+      }, 'image/jpeg', 0.85)
     }
     img.src = url
   })
@@ -95,17 +81,13 @@ export default function LogPage() {
     } else {
       if (loadingInterval.current) clearInterval(loadingInterval.current)
     }
-    return () => {
-      if (loadingInterval.current) clearInterval(loadingInterval.current)
-    }
+    return () => { if (loadingInterval.current) clearInterval(loadingInterval.current) }
   }, [step])
 
   async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-
-    const objectUrl = URL.createObjectURL(file)
-    setPreview(objectUrl)
+    setPreview(URL.createObjectURL(file))
     setStep('analyzing')
     setLoadingText(LOADING_MESSAGES[0])
 
@@ -119,15 +101,8 @@ export default function LogPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageBase64: base64, mediaType: mt }),
       })
-
       const data = await res.json()
-
-      if (!res.ok) {
-        setErrorMsg(data.error ?? 'Analysis failed. Try again.')
-        setStep('error')
-        return
-      }
-
+      if (!res.ok) { setErrorMsg(data.error ?? 'Analysis failed. Try again.'); setStep('error'); return }
       setItems(data.items ?? [])
       setNotes(data.notes ?? '')
       setStep('confirm')
@@ -138,9 +113,9 @@ export default function LogPage() {
   }
 
   function updateItem(idx: number, field: keyof MealItem, value: string | number) {
-    setItems(prev =>
-      prev.map((item, i) => (i === idx ? { ...item, [field]: field === 'name' || field === 'portion' || field === 'confidence' ? value : Number(value) } : item)),
-    )
+    setItems(prev => prev.map((item, i) =>
+      i === idx ? { ...item, [field]: field === 'name' || field === 'portion' || field === 'confidence' ? value : Number(value) } : item
+    ))
   }
 
   function removeItem(idx: number) {
@@ -150,21 +125,18 @@ export default function LogPage() {
   async function handleSave() {
     if (items.length === 0) return
     setStep('saving')
-
     try {
       const res = await fetch('/api/meals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items, imageBase64, mediaType, loggedAt, notes }),
       })
-
       if (!res.ok) {
         const data = await res.json()
         setErrorMsg(data.error ?? 'Save failed. Try again.')
         setStep('error')
         return
       }
-
       router.push('/')
     } catch {
       setErrorMsg('Connection error. Try again.')
@@ -176,35 +148,27 @@ export default function LogPage() {
 
   if (step === 'capture') {
     return (
-      <div className="min-h-screen bg-zinc-950 flex flex-col">
-        <div className="flex items-center gap-3 px-4 pt-10 pb-6">
-          <Link href="/" className="text-zinc-400 text-sm">← Back</Link>
-          <h1 className="text-xl font-bold text-white">Log Meal</h1>
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-24">
+        <div className="px-4 pt-12 pb-6">
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Log Meal</h1>
+          <p className="text-zinc-500 dark:text-zinc-500 text-sm">Photo-based analysis</p>
         </div>
 
-        <div className="flex-1 flex flex-col items-center justify-center px-4 gap-6">
-          <div className="w-full max-w-sm">
-            <label
-              htmlFor="meal-photo"
-              className="flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed border-zinc-700 bg-zinc-900 cursor-pointer active:scale-95 transition-transform"
-              style={{ minHeight: '240px' }}
-            >
-              <div className="flex flex-col items-center gap-3 py-12 px-6 text-center">
-                <div className="text-5xl">📷</div>
-                <p className="text-white font-semibold text-lg">Take a photo</p>
-                <p className="text-zinc-400 text-sm">or choose from library</p>
+        <div className="px-4">
+          <label
+            htmlFor="meal-photo"
+            className="flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 cursor-pointer active:scale-95 transition-transform"
+            style={{ minHeight: '260px' }}
+          >
+            <div className="flex flex-col items-center gap-3 py-12 px-6 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-3xl">📷</div>
+              <div>
+                <p className="text-zinc-900 dark:text-white font-semibold text-lg">Take a photo</p>
+                <p className="text-zinc-500 dark:text-zinc-500 text-sm mt-1">or choose from library</p>
               </div>
-            </label>
-            <input
-              ref={fileRef}
-              id="meal-photo"
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={handleFileChange}
-            />
-          </div>
+            </div>
+          </label>
+          <input ref={fileRef} id="meal-photo" type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
         </div>
       </div>
     )
@@ -212,20 +176,18 @@ export default function LogPage() {
 
   if (step === 'analyzing') {
     return (
-      <div className="min-h-screen bg-zinc-950 flex flex-col">
-        <div className="flex items-center gap-3 px-4 pt-10 pb-6">
-          <h1 className="text-xl font-bold text-white">Log Meal</h1>
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col pb-24">
+        <div className="px-4 pt-12 pb-4">
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Analyzing</h1>
         </div>
-
         {preview && (
-          <div className="px-4">
-            <img src={preview} alt="Meal" className="w-full max-h-64 object-cover rounded-2xl" />
+          <div className="px-4 mb-6">
+            <img src={preview} alt="Meal" className="w-full max-h-56 object-cover rounded-2xl" />
           </div>
         )}
-
         <div className="flex-1 flex flex-col items-center justify-center gap-4 px-4">
-          <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          <p className="text-white text-lg font-medium">{loadingText}</p>
+          <div className="w-8 h-8 border-2 border-zinc-900 dark:border-white border-t-transparent rounded-full animate-spin" />
+          <p className="text-zinc-700 dark:text-zinc-300 text-lg font-medium">{loadingText}</p>
         </div>
       </div>
     )
@@ -233,19 +195,17 @@ export default function LogPage() {
 
   if (step === 'error') {
     return (
-      <div className="min-h-screen bg-zinc-950 flex flex-col">
-        <div className="flex items-center gap-3 px-4 pt-10 pb-6">
-          <Link href="/" className="text-zinc-400 text-sm">← Back</Link>
-          <h1 className="text-xl font-bold text-white">Log Meal</h1>
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col pb-24">
+        <div className="px-4 pt-12 pb-6">
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Log Meal</h1>
         </div>
-
         <div className="flex-1 flex flex-col items-center justify-center px-4 gap-6">
-          <p className="text-red-400 text-center">{errorMsg}</p>
+          <p className="text-red-500 dark:text-red-400 text-center">{errorMsg}</p>
           <button
             onClick={() => { setStep('capture'); setPreview(null) }}
-            className="px-6 py-3 rounded-xl bg-zinc-800 text-white font-semibold"
-            style={{ minHeight: '48px' }}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white font-semibold"
           >
+            <RotateCcw size={16} />
             Try again
           </button>
         </div>
@@ -255,90 +215,95 @@ export default function LogPage() {
 
   if (step === 'confirm' || step === 'saving') {
     return (
-      <div className="min-h-screen bg-zinc-950 flex flex-col pb-32">
-        <div className="flex items-center gap-3 px-4 pt-10 pb-4">
-          <button onClick={() => setStep('capture')} className="text-zinc-400 text-sm">← Retake</button>
-          <h1 className="text-xl font-bold text-white">Confirm</h1>
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-32">
+        <div className="flex items-center justify-between px-4 pt-12 pb-4">
+          <div>
+            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Confirm</h1>
+            <p className="text-zinc-500 dark:text-zinc-500 text-sm">{items.length} item{items.length !== 1 ? 's' : ''} detected</p>
+          </div>
+          <button
+            onClick={() => setStep('capture')}
+            className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400 text-sm font-medium"
+          >
+            <RotateCcw size={14} />
+            Retake
+          </button>
         </div>
 
         {preview && (
           <div className="px-4 mb-4">
-            <img src={preview} alt="Meal" className="w-full max-h-48 object-cover rounded-xl" />
+            <img src={preview} alt="Meal" className="w-full max-h-44 object-cover rounded-2xl" />
           </div>
         )}
 
         <div className="px-4 mb-4 grid grid-cols-4 gap-2">
           {[
-            { label: 'Cal', value: Math.round(t.calories) },
-            { label: 'Pro', value: `${Math.round(t.protein)}g` },
-            { label: 'Carb', value: `${Math.round(t.carbs)}g` },
-            { label: 'Fat', value: `${Math.round(t.fat)}g` },
-          ].map(({ label, value }) => (
-            <div key={label} className="bg-zinc-900 rounded-xl p-3 text-center">
-              <p className="text-white font-bold text-lg">{value}</p>
-              <p className="text-zinc-400 text-xs">{label}</p>
+            { label: 'Cal', value: Math.round(t.calories), color: 'text-blue-600 dark:text-blue-400' },
+            { label: 'Pro', value: `${Math.round(t.protein)}g`, color: 'text-emerald-600 dark:text-emerald-400' },
+            { label: 'Carb', value: `${Math.round(t.carbs)}g`, color: 'text-amber-600 dark:text-amber-400' },
+            { label: 'Fat', value: `${Math.round(t.fat)}g`, color: 'text-orange-600 dark:text-orange-400' },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-3 text-center">
+              <p className={`font-bold text-base tabular-nums ${color}`}>{value}</p>
+              <p className="text-zinc-400 dark:text-zinc-600 text-xs mt-0.5">{label}</p>
             </div>
           ))}
         </div>
 
         <div className="px-4 space-y-3">
           {items.map((item, idx) => (
-            <div key={idx} className="bg-zinc-900 rounded-xl p-4 space-y-3">
+            <div key={idx} className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <input
                   type="text"
                   value={item.name}
                   onChange={e => updateItem(idx, 'name', e.target.value)}
-                  className="flex-1 bg-transparent text-white font-semibold text-base focus:outline-none border-b border-zinc-700 pb-1"
+                  className="flex-1 bg-transparent text-zinc-900 dark:text-white font-semibold text-base focus:outline-none border-b border-zinc-200 dark:border-zinc-700 pb-1"
                 />
                 <button
                   onClick={() => removeItem(idx)}
-                  className="text-zinc-500 text-sm shrink-0 pt-1"
-                  style={{ minHeight: '32px', minWidth: '32px' }}
+                  className="text-zinc-400 dark:text-zinc-600 text-sm shrink-0 pt-1 w-8 h-8 flex items-center justify-center"
                 >
                   ✕
                 </button>
               </div>
-
               <input
                 type="text"
                 value={item.portion}
                 onChange={e => updateItem(idx, 'portion', e.target.value)}
-                placeholder="Portion"
-                className="w-full bg-transparent text-zinc-400 text-sm focus:outline-none"
+                placeholder="Portion size"
+                className="w-full bg-transparent text-zinc-500 dark:text-zinc-400 text-sm focus:outline-none"
               />
-
               <div className="grid grid-cols-4 gap-2">
                 {(['calories', 'protein', 'carbs', 'fat'] as const).map(field => (
                   <div key={field}>
-                    <p className="text-zinc-500 text-xs mb-1 capitalize">{field === 'calories' ? 'Cal' : field === 'protein' ? 'Pro' : field === 'carbs' ? 'Carb' : 'Fat'}</p>
+                    <p className="text-zinc-400 dark:text-zinc-600 text-xs mb-1 text-center capitalize">
+                      {field === 'calories' ? 'Cal' : field === 'protein' ? 'Pro' : field === 'carbs' ? 'Carb' : 'Fat'}
+                    </p>
                     <input
                       type="number"
                       value={item[field]}
                       onChange={e => updateItem(idx, field, e.target.value)}
-                      className="w-full bg-zinc-800 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:ring-1 focus:ring-zinc-600 text-center"
+                      className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-lg px-2 py-1.5 text-zinc-900 dark:text-white text-sm focus:outline-none text-center"
                       style={{ minHeight: '36px' }}
                     />
                   </div>
                 ))}
               </div>
-
               {item.confidence === 'low' && (
-                <p className="text-amber-500 text-xs">Low confidence — verify this item</p>
+                <p className="text-amber-600 dark:text-amber-500 text-xs">Low confidence — verify this item</p>
               )}
             </div>
           ))}
         </div>
 
-        {notes && (
-          <p className="px-4 mt-3 text-zinc-500 text-sm">{notes}</p>
-        )}
+        {notes && <p className="px-4 mt-3 text-zinc-500 dark:text-zinc-500 text-sm">{notes}</p>}
 
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-zinc-950 border-t border-zinc-900">
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-t border-zinc-200 dark:border-zinc-900">
           <button
             onClick={handleSave}
             disabled={step === 'saving' || items.length === 0}
-            className="w-full py-4 rounded-xl bg-white text-zinc-900 font-bold text-base disabled:opacity-40 active:scale-95 transition-transform"
+            className="w-full py-4 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold text-base disabled:opacity-40 active:scale-95 transition-transform"
             style={{ minHeight: '56px' }}
           >
             {step === 'saving' ? 'Saving...' : `Save — ${Math.round(t.calories)} cal`}
