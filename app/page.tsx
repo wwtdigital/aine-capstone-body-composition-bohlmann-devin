@@ -10,13 +10,16 @@ export const revalidate = 0
 type NutritionRow = { cal: number; prot: number; carbs: number; fat: number }
 type InBodyRow = { reading_date: number; weight_kg: number | null; body_fat_pct: number | null; lean_mass_kg: number | null }
 type MealRow = { id: string; logged_at: number; total_calories: number; total_protein: number; items_json: string; photo_url: string | null }
+type WhoopRow = { date: string; recovery_score: number | null; strain: number | null; hrv_ms: number | null; rhr: number | null; sleep_minutes: number | null }
 
 export default async function Today() {
   const startOfToday = new Date()
   startOfToday.setUTCHours(0, 0, 0, 0)
   const todayStart = startOfToday.getTime()
+  const todayStr = new Date().toISOString().split('T')[0]
+  const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0]
 
-  const [nutritionResult, inbodyResult, mealsResult] = await Promise.all([
+  const [nutritionResult, inbodyResult, mealsResult, whoopResult] = await Promise.all([
     db.execute({
       sql: `SELECT COALESCE(SUM(total_calories),0) as cal, COALESCE(SUM(total_protein),0) as prot, COALESCE(SUM(total_carbs),0) as carbs, COALESCE(SUM(total_fat),0) as fat FROM meals WHERE user_id = 'will' AND logged_at >= ?`,
       args: [todayStart],
@@ -29,11 +32,16 @@ export default async function Today() {
       sql: `SELECT id, logged_at, total_calories, total_protein, items_json, photo_url FROM meals WHERE user_id = 'will' AND logged_at >= ? ORDER BY logged_at DESC LIMIT 8`,
       args: [todayStart],
     }),
+    db.execute({
+      sql: `SELECT date, recovery_score, strain, hrv_ms, rhr, sleep_minutes FROM whoop_daily WHERE user_id = 'will' AND date IN (?, ?) ORDER BY date DESC LIMIT 1`,
+      args: [todayStr, yesterdayStr],
+    }),
   ])
 
   const n = nutritionResult.rows[0] as unknown as NutritionRow
   const latest = inbodyResult.rows[0] as unknown as InBodyRow | undefined
   const meals = mealsResult.rows as unknown as MealRow[]
+  const whoop = whoopResult.rows[0] as unknown as WhoopRow | undefined
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
 
@@ -111,6 +119,38 @@ export default async function Today() {
                 {latest.lean_mass_kg?.toFixed(1) ?? '—'}
               </p>
               <p className="text-zinc-400 dark:text-zinc-500 text-xs mt-0.5">kg lean</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Whoop recovery */}
+      {whoop && (
+        <div className="mx-4 mt-4 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-500 uppercase tracking-wider">Recovery</span>
+            <span className="text-xs text-zinc-400 dark:text-zinc-600">{whoop.date === todayStr ? 'Today' : 'Yesterday'}</span>
+          </div>
+          <div className="grid grid-cols-4 gap-2 text-center">
+            <div>
+              <p className={`font-bold text-xl tabular-nums ${whoop.recovery_score != null && whoop.recovery_score >= 67 ? 'text-emerald-600 dark:text-emerald-400' : whoop.recovery_score != null && whoop.recovery_score >= 34 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`}>
+                {whoop.recovery_score ?? '—'}
+              </p>
+              <p className="text-zinc-400 dark:text-zinc-600 text-xs mt-0.5">recovery</p>
+            </div>
+            <div>
+              <p className="text-zinc-900 dark:text-white font-bold text-xl tabular-nums">{whoop.strain?.toFixed(1) ?? '—'}</p>
+              <p className="text-zinc-400 dark:text-zinc-600 text-xs mt-0.5">strain</p>
+            </div>
+            <div>
+              <p className="text-zinc-900 dark:text-white font-bold text-xl tabular-nums">{whoop.hrv_ms?.toFixed(0) ?? '—'}</p>
+              <p className="text-zinc-400 dark:text-zinc-600 text-xs mt-0.5">HRV ms</p>
+            </div>
+            <div>
+              <p className="text-zinc-900 dark:text-white font-bold text-xl tabular-nums">
+                {whoop.sleep_minutes != null ? `${Math.floor(whoop.sleep_minutes / 60)}h` : '—'}
+              </p>
+              <p className="text-zinc-400 dark:text-zinc-600 text-xs mt-0.5">sleep</p>
             </div>
           </div>
         </div>
