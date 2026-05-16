@@ -3,6 +3,7 @@ import { GOALS } from '@/lib/goals'
 import Link from 'next/link'
 import MacroRing from '@/components/MacroRing'
 import ThemeToggle from '@/components/ThemeToggle'
+import { Sparkles } from 'lucide-react'
 
 export const revalidate = 0
 
@@ -114,6 +115,23 @@ export default async function Today() {
           </div>
         </div>
       )}
+
+      {/* Gap analysis CTA */}
+      <div className="mx-4 mt-4">
+        <Link
+          href="/gap"
+          className="flex items-center gap-3 bg-gradient-to-r from-blue-600 to-blue-500 rounded-2xl p-4 active:scale-95 transition-transform"
+        >
+          <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+            <Sparkles size={18} className="text-white" />
+          </div>
+          <div className="flex-1">
+            <p className="text-white font-semibold text-sm">Gap Analysis</p>
+            <p className="text-blue-100 text-xs mt-0.5">AI coaching based on your data</p>
+          </div>
+          <span className="text-blue-200 text-lg">→</span>
+        </Link>
+      </div>
 
       {/* Today's meals */}
       <div className="mx-4 mt-4">
