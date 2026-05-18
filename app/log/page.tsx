@@ -293,78 +293,79 @@ export default function LogPage() {
 
   if (step === 'confirm' || step === 'saving') {
     return (
-      <div className="min-h-screen bg-page pb-32">
-        <div className="flex items-center justify-between px-4 pt-12 pb-4">
-          <div>
-            <h1 className="text-2xl font-bold text-ink tracking-tight">Confirm</h1>
-            <p className="text-ink3 text-sm">{items.length} item{items.length !== 1 ? 's' : ''} detected</p>
-          </div>
+      <div className="min-h-screen bg-page pb-48">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 pt-12 pb-3">
+          <h1 className="text-2xl font-bold text-ink tracking-tight">Confirm</h1>
           <button
             onClick={() => setStep('capture')}
-            className="flex items-center gap-1.5 text-ink3 text-sm font-medium"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-card border border-line text-ink3 text-sm font-medium active:scale-95 transition-transform"
           >
-            <RotateCcw size={14} />
+            <RotateCcw size={13} />
             Retake
           </button>
         </div>
 
+        {/* Image preview */}
         {preview && (
           <div className="px-4 mb-4">
-            <img src={preview} alt="Meal" className="w-full max-h-44 object-cover rounded-2xl" />
+            <img src={preview} alt="Meal" className="w-full h-40 object-cover rounded-2xl" />
           </div>
         )}
 
-        {/* 4-column macro totals with colored pill badges */}
-        <div className="px-4 mb-4 grid grid-cols-4 gap-2">
+        {/* Macro totals */}
+        <div className="px-4 mb-5 grid grid-cols-4 gap-2">
           {[
-            { label: 'Cal', value: Math.round(t.calories), pill: 'bg-blue-500/15 text-blue-400' },
-            { label: 'Pro', value: `${Math.round(t.protein)}g`, pill: 'bg-green-500/15 text-green-400' },
-            { label: 'Carb', value: `${Math.round(t.carbs)}g`, pill: 'bg-amber-500/15 text-amber-400' },
-            { label: 'Fat', value: `${Math.round(t.fat)}g`, pill: 'bg-purple-500/15 text-purple-400' },
-          ].map(({ label, value, pill }) => (
-            <div key={label} className="bg-card rounded-2xl border border-line p-3 text-center">
-              <p className={`font-bold text-base tabular-nums rounded-lg px-1 py-0.5 ${pill}`}>{value}</p>
-              <p className="text-ink3 text-xs mt-1">{label}</p>
-            </div>
+            { label: 'Cal', value: String(Math.round(t.calories)), color: 'text-blue-500' },
+            { label: 'Pro', value: `${Math.round(t.protein)}g`, color: 'text-ok' },
+            { label: 'Carb', value: `${Math.round(t.carbs)}g`, color: 'text-amber-500' },
+            { label: 'Fat', value: `${Math.round(t.fat)}g`, color: 'text-purple-400' },
+          ].map(({ label, value, color }) => (
+            <FramedCard key={label} className="bg-card rounded-2xl border border-line p-3 text-center">
+              <p className={`font-bold text-lg tabular-nums ${color}`}>{value}</p>
+              <p className="text-ink4 text-xs mt-0.5">{label}</p>
+            </FramedCard>
           ))}
         </div>
 
+        {/* Item cards */}
         <div className="px-4 space-y-3">
           {items.map((item, idx) => (
-            <FramedCard key={idx} className="bg-card rounded-2xl border border-line p-4 space-y-3">
+            <FramedCard key={idx} className="bg-card rounded-2xl border border-line p-4 space-y-2">
               <div className="flex items-start justify-between gap-2">
-                <input
-                  type="text"
-                  value={item.name}
-                  onChange={e => updateItem(idx, 'name', e.target.value)}
-                  className="flex-1 bg-transparent text-ink font-semibold text-base focus:outline-none border-b border-line pb-1"
-                />
+                <div className="flex-1 min-w-0">
+                  <input
+                    type="text"
+                    value={item.name}
+                    onChange={e => updateItem(idx, 'name', e.target.value)}
+                    className="w-full bg-transparent text-ink font-semibold text-sm focus:outline-none"
+                  />
+                  <input
+                    type="text"
+                    value={item.portion}
+                    onChange={e => updateItem(idx, 'portion', e.target.value)}
+                    placeholder="Portion size"
+                    className="w-full bg-transparent text-ink3 text-xs focus:outline-none mt-0.5"
+                  />
+                </div>
                 <button
                   onClick={() => removeItem(idx)}
-                  className="text-ink3 text-sm shrink-0 pt-1 w-8 h-8 flex items-center justify-center"
+                  className="w-7 h-7 flex items-center justify-center text-ink4 hover:text-ink3 shrink-0"
                 >
                   <X size={14} />
                 </button>
               </div>
-              <input
-                type="text"
-                value={item.portion}
-                onChange={e => updateItem(idx, 'portion', e.target.value)}
-                placeholder="Portion size"
-                className="w-full bg-transparent text-ink3 text-sm focus:outline-none"
-              />
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 gap-1.5 pt-1 border-t border-line">
                 {(['calories', 'protein', 'carbs', 'fat'] as const).map(field => (
-                  <div key={field}>
-                    <p className="text-ink3 text-xs mb-1 text-center capitalize">
+                  <div key={field} className="text-center">
+                    <p className="text-ink4 text-[10px] mb-1">
                       {field === 'calories' ? 'Cal' : field === 'protein' ? 'Pro' : field === 'carbs' ? 'Carb' : 'Fat'}
                     </p>
                     <input
                       type="number"
                       value={item[field]}
                       onChange={e => updateItem(idx, field, e.target.value)}
-                      className="w-full bg-surface rounded-lg px-2 py-1.5 text-ink text-sm focus:outline-none text-center border border-line focus:border-linehi"
-                      style={{ minHeight: '36px' }}
+                      className="w-full bg-surface rounded-lg px-1 py-1.5 text-ink text-sm font-medium focus:outline-none text-center border border-line"
                     />
                   </div>
                 ))}
@@ -376,16 +377,16 @@ export default function LogPage() {
           ))}
         </div>
 
-        {notes && <p className="px-4 mt-3 text-ink3 text-sm">{notes}</p>}
+        {notes && <p className="px-4 mt-3 text-ink3 text-xs">{notes}</p>}
 
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-page/95 backdrop-blur-md border-t border-line">
+        {/* Save bar — sits above BottomNav */}
+        <div className="fixed bottom-[68px] left-0 right-0 px-4 pb-3 pt-3 bg-page/95 backdrop-blur-md border-t border-line z-40">
           <button
             onClick={handleSave}
             disabled={step === 'saving' || items.length === 0}
-            className="w-full py-4 rounded-full bg-brand text-page font-bold text-base disabled:opacity-40 active:scale-95 transition-transform shadow-lg"
-            style={{ minHeight: '56px' }}
+            className="w-full py-4 rounded-full bg-brand text-page font-bold text-base disabled:opacity-40 active:scale-95 transition-transform"
           >
-            {step === 'saving' ? 'Saving...' : `Save — ${Math.round(t.calories)} cal ›`}
+            {step === 'saving' ? 'Saving...' : `Log meal — ${Math.round(t.calories)} cal ›`}
           </button>
         </div>
       </div>

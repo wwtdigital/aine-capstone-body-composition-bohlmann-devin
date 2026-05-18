@@ -10,6 +10,7 @@ import MacroRadial from '@/components/MacroRadial'
 import BodyBattery from '@/components/BodyBattery'
 import FramedCard from '@/components/FramedCard'
 import ISymbol from '@/components/ISymbol'
+import GapAnalysis from '@/components/GapAnalysis'
 
 export const revalidate = 0
 
@@ -167,17 +168,14 @@ export default async function ProgressPage() {
 
       {/* Sticky tab bar */}
       <div className="bg-page/95 backdrop-blur-md sticky top-0 z-10 px-4 py-2 flex gap-2 border-b border-line">
-        <a
-          href="#nutrition"
-          className="px-4 py-1.5 rounded-xl text-xs font-semibold text-ink2 bg-surface border border-line active:scale-95 transition-transform"
-        >
+        <a href="#nutrition" className="px-4 py-1.5 rounded-xl text-xs font-semibold text-ink2 bg-surface border border-line active:scale-95 transition-transform">
           Nutrition
         </a>
-        <a
-          href="#body"
-          className="px-4 py-1.5 rounded-xl text-xs font-semibold text-ink2 bg-surface border border-line active:scale-95 transition-transform"
-        >
+        <a href="#body" className="px-4 py-1.5 rounded-xl text-xs font-semibold text-ink2 bg-surface border border-line active:scale-95 transition-transform">
           Body Comp
+        </a>
+        <a href="#ask" className="px-4 py-1.5 rounded-xl text-xs font-semibold text-ink2 bg-surface border border-line active:scale-95 transition-transform">
+          Ask AI
         </a>
       </div>
 
@@ -429,6 +427,16 @@ export default async function ProgressPage() {
               </FramedCard>
             </>
           )}
+        </section>
+
+        {/* ── Ask AI ── */}
+        <section id="ask" className="space-y-4">
+          <div className="flex items-center gap-3">
+            <ISymbol size={14} className="text-ink3 opacity-60 shrink-0" />
+            <span className="eyebrow shrink-0">Ask AI</span>
+            <div className="flex-1 h-px bg-line" />
+          </div>
+          <GapAnalysis />
         </section>
       </div>
     </div>

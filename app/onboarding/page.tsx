@@ -17,10 +17,11 @@ export default function OnboardingPage() {
   const router = useRouter()
   const [step, setStep] = useState(1)
 
-  // Profile fields
+  // Profile fields (imperial — converted to metric before storing)
   const [name, setName] = useState('')
-  const [weightKg, setWeightKg] = useState('')
-  const [heightCm, setHeightCm] = useState('')
+  const [weightLbs, setWeightLbs] = useState('')
+  const [heightFt, setHeightFt] = useState('')
+  const [heightIn, setHeightIn] = useState('')
   const [trainingProfile, setTrainingProfile] = useState<TrainingProfile>('hybrid')
 
   // Goals fields
@@ -35,8 +36,8 @@ export default function OnboardingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name,
-          weightKg: parseFloat(weightKg) || 0,
-          heightCm: parseFloat(heightCm) || 0,
+          weightKg: Math.round((parseFloat(weightLbs) || 0) * 0.453592 * 10) / 10,
+          heightCm: Math.round(((parseInt(heightFt) || 0) * 12 + (parseInt(heightIn) || 0)) * 2.54),
           trainingProfile,
         }),
       }),
@@ -91,24 +92,35 @@ export default function OnboardingPage() {
                 />
               </div>
 
+              <div>
+                <label className="block text-xs font-medium text-ink3 mb-1">Body weight (lbs)</label>
+                <input
+                  type="number"
+                  value={weightLbs}
+                  onChange={e => setWeightLbs(e.target.value)}
+                  placeholder="185"
+                  className="w-full bg-surface border border-line rounded-2xl px-4 py-2.5 text-sm text-ink placeholder:text-ink4 focus:outline-none focus:border-brand"
+                />
+              </div>
+
               <div className="flex gap-3">
                 <div className="flex-1">
-                  <label className="block text-xs font-medium text-ink3 mb-1">Body weight (kg)</label>
+                  <label className="block text-xs font-medium text-ink3 mb-1">Height (ft)</label>
                   <input
                     type="number"
-                    value={weightKg}
-                    onChange={e => setWeightKg(e.target.value)}
-                    placeholder="85"
+                    value={heightFt}
+                    onChange={e => setHeightFt(e.target.value)}
+                    placeholder="5"
                     className="w-full bg-surface border border-line rounded-2xl px-4 py-2.5 text-sm text-ink placeholder:text-ink4 focus:outline-none focus:border-brand"
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="block text-xs font-medium text-ink3 mb-1">Height (cm)</label>
+                  <label className="block text-xs font-medium text-ink3 mb-1">Height (in)</label>
                   <input
                     type="number"
-                    value={heightCm}
-                    onChange={e => setHeightCm(e.target.value)}
-                    placeholder="180"
+                    value={heightIn}
+                    onChange={e => setHeightIn(e.target.value)}
+                    placeholder="11"
                     className="w-full bg-surface border border-line rounded-2xl px-4 py-2.5 text-sm text-ink placeholder:text-ink4 focus:outline-none focus:border-brand"
                   />
                 </div>

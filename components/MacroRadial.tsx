@@ -30,7 +30,7 @@ export default function MacroRadial({ calories, protein, carbs, fat, calGoal, pr
           startAngle={90} endAngle={-270}
           barSize={14}
         >
-          <RadialBar background={{ fill: '#1a2030' }} dataKey="value" cornerRadius={7} />
+          <RadialBar background={{ fill: 'var(--color-surface, #e8e4db)' }} dataKey="value" cornerRadius={7} />
           <Tooltip
             contentStyle={{ background: '#131822', border: '1px solid #1f2937', borderRadius: 8, fontSize: 11 }}
             formatter={(value, name) => {
