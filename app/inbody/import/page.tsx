@@ -31,13 +31,15 @@ export default function InBodyImportPage() {
   const router = useRouter()
 
   async function processFiles(files: File[]) {
-    const pdfs = files.filter(f => f.type === 'application/pdf' || f.name.endsWith('.pdf'))
-    if (pdfs.length === 0) return
-    setParseProgress({ done: 0, total: pdfs.length })
+    const supported = files.filter(f =>
+      f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf') || f.type.startsWith('image/')
+    )
+    if (supported.length === 0) return
+    setParseProgress({ done: 0, total: supported.length })
     setStep('parsing')
 
     const results: ParsedRecord[] = []
-    for (const file of pdfs) {
+    for (const file of supported) {
       const formData = new FormData()
       formData.append('file', file)
       try {
@@ -140,8 +142,8 @@ export default function InBodyImportPage() {
     return (
       <div className="min-h-screen bg-page pb-24">
         <div className="px-4 pt-12 pb-6">
-          <h1 className="text-2xl font-bold text-ink tracking-tight">Import PDFs</h1>
-          <p className="text-ink3 text-sm">InBody report PDFs</p>
+          <h1 className="text-2xl font-bold text-ink tracking-tight">Import InBody</h1>
+          <p className="text-ink3 text-sm">PDF reports or photos</p>
         </div>
 
         <div className="px-4">
@@ -153,10 +155,10 @@ export default function InBodyImportPage() {
             className={`w-full rounded-2xl border-2 border-dashed cursor-pointer transition-all flex flex-col items-center justify-center py-16 px-6 text-center ${dragging ? 'border-brand bg-brand/10' : 'border-line bg-card'}`}
           >
             <Upload size={32} className="text-ink3 mb-3" />
-            <p className="text-ink font-semibold mb-1">Drop PDF reports here</p>
-            <p className="text-ink3 text-sm">or tap to choose files · multiple supported</p>
+            <p className="text-ink font-semibold mb-1">Drop reports here</p>
+            <p className="text-ink3 text-sm">PDF or photo · multiple supported</p>
           </div>
-          <input ref={fileRef} type="file" accept=".pdf,application/pdf" multiple className="hidden" onChange={handleFileInput} />
+          <input ref={fileRef} type="file" accept=".pdf,application/pdf,image/*" multiple className="hidden" onChange={handleFileInput} />
         </div>
       </div>
     )
@@ -232,14 +234,13 @@ export default function InBodyImportPage() {
           ))}
         </div>
 
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-page/95 backdrop-blur-md border-t border-line">
+        <div className="fixed bottom-[68px] left-0 right-0 px-4 pb-3 pt-3 bg-page/95 backdrop-blur-md border-t border-line z-40">
           <button
             onClick={handleConfirm}
             disabled={step === 'saving' || accepted.length === 0}
-            className="w-full py-4 rounded-2xl bg-brand text-page font-bold text-base disabled:opacity-40 active:scale-95 transition-transform"
-            style={{ minHeight: '56px' }}
+            className="w-full py-4 rounded-full bg-brand text-page font-bold text-base disabled:opacity-40 active:scale-95 transition-transform"
           >
-            {step === 'saving' ? 'Saving...' : `Save ${accepted.length} reading${accepted.length !== 1 ? 's' : ''}`}
+            {step === 'saving' ? 'Saving...' : `Save ${accepted.length} reading${accepted.length !== 1 ? 's' : ''} ›`}
           </button>
         </div>
       </div>

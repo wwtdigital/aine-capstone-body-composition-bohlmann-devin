@@ -4,9 +4,13 @@ import { anthropic } from '@/lib/anthropic'
 
 export const maxDuration = 30
 
-const EXTRACT_PROMPT = `Extract InBody report fields from this PDF text.
+const TEXT_PROMPT = `Extract InBody report fields from this text.
 Return JSON: {"reading_date": "YYYY-MM-DD", "weight_kg": number|null, "body_fat_pct": number|null, "lean_mass_kg": number|null, "body_water_kg": number|null, "visceral_fat_level": number|null}
 If a field is not found, return null. Do not guess. reading_date must be ISO 8601 (YYYY-MM-DD).`
+
+const IMAGE_PROMPT = `This is an InBody body composition report. Extract the measurement fields.
+Return JSON only: {"reading_date": "YYYY-MM-DD", "weight_kg": number|null, "body_fat_pct": number|null, "lean_mass_kg": number|null, "body_water_kg": number|null, "visceral_fat_level": number|null}
+If a field is not visible or unclear, return null. Do not guess. reading_date must be ISO 8601 (YYYY-MM-DD).`
 
 type ParsedReading = {
   reading_date: string | null
@@ -30,6 +34,16 @@ function validateParsed(raw: unknown): ParsedReading | null {
   }
 }
 
+function extractJson(raw: string): ParsedReading | null {
+  const match = raw.match(/\{[\s\S]*\}/)
+  if (!match) return null
+  try {
+    return validateParsed(JSON.parse(match[0]))
+  } catch {
+    return null
+  }
+}
+
 export async function POST(request: NextRequest) {
   let formData: FormData
   try {
@@ -43,54 +57,78 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'file field required' }, { status: 400 })
   }
 
-  let pdfText: string
-  try {
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-    const parser = new PDFParse({ data: buffer })
-    const result = await parser.getText()
-    pdfText = result.text
-  } catch (err) {
-    console.error('PDF parse error:', err)
-    return NextResponse.json({ error: 'Could not read PDF. Make sure it is a valid InBody report.' }, { status: 422 })
-  }
+  const isImage = file.type.startsWith('image/')
+  const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
 
-  if (!pdfText || pdfText.trim().length < 50) {
-    return NextResponse.json({ error: 'PDF appears to have no readable text (may be image-only).' }, { status: 422 })
+  if (!isImage && !isPdf) {
+    return NextResponse.json({ error: 'Unsupported file type. Upload a PDF or image.' }, { status: 400 })
   }
 
   let raw: string
-  try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 512,
-      messages: [
-        {
+
+  if (isImage) {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    const mediaType = allowedTypes.includes(file.type) ? file.type : 'image/jpeg'
+
+    try {
+      const arrayBuffer = await file.arrayBuffer()
+      const base64 = Buffer.from(arrayBuffer).toString('base64')
+
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 512,
+        messages: [{
           role: 'user',
-          content: `${EXTRACT_PROMPT}\n\n---\n${pdfText.slice(0, 4000)}`,
-        },
-      ],
-    })
-    raw = response.content[0].type === 'text' ? response.content[0].text : ''
-  } catch (err) {
-    console.error('Claude extraction error:', err)
-    return NextResponse.json({ error: 'Extraction failed. Try again.' }, { status: 502 })
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: mediaType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp', data: base64 },
+            },
+            { type: 'text', text: IMAGE_PROMPT },
+          ],
+        }],
+      })
+      raw = response.content[0].type === 'text' ? response.content[0].text : ''
+    } catch (err) {
+      console.error('Claude vision error:', err)
+      return NextResponse.json({ error: 'Extraction failed. Try again.' }, { status: 502 })
+    }
+  } else {
+    let pdfText: string
+    try {
+      const arrayBuffer = await file.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+      const parser = new PDFParse({ data: buffer })
+      const result = await parser.getText()
+      pdfText = result.text
+    } catch (err) {
+      console.error('PDF parse error:', err)
+      return NextResponse.json({ error: 'Could not read PDF. Make sure it is a valid InBody report.' }, { status: 422 })
+    }
+
+    if (!pdfText || pdfText.trim().length < 50) {
+      return NextResponse.json({ error: 'PDF has no readable text. Try uploading a photo of the report instead.' }, { status: 422 })
+    }
+
+    try {
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 512,
+        messages: [{
+          role: 'user',
+          content: `${TEXT_PROMPT}\n\n---\n${pdfText.slice(0, 4000)}`,
+        }],
+      })
+      raw = response.content[0].type === 'text' ? response.content[0].text : ''
+    } catch (err) {
+      console.error('Claude extraction error:', err)
+      return NextResponse.json({ error: 'Extraction failed. Try again.' }, { status: 502 })
+    }
   }
 
-  const jsonMatch = raw.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) {
-    return NextResponse.json({ error: 'Could not extract fields from this PDF.', raw }, { status: 422 })
-  }
-
-  let parsed: ParsedReading | null
-  try {
-    parsed = validateParsed(JSON.parse(jsonMatch[0]))
-  } catch {
-    return NextResponse.json({ error: 'Could not extract fields from this PDF.', raw }, { status: 422 })
-  }
-
+  const parsed = extractJson(raw)
   if (!parsed) {
-    return NextResponse.json({ error: 'Could not extract fields from this PDF.' }, { status: 422 })
+    return NextResponse.json({ error: 'Could not extract fields from this file.', raw }, { status: 422 })
   }
 
   return NextResponse.json({ ...parsed, raw_extracted_json: raw, filename: file.name })
