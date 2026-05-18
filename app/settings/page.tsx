@@ -212,8 +212,35 @@ function SettingsContent() {
       const data = await res.json()
       setConnected(data.connected)
       if (data.recent) setWhoopData(data.recent)
+      // Auto-sync if data is stale (missing today or yesterday)
+      if (data.connected) {
+        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+        if (!data.latestDataDate || data.latestDataDate < yesterday) {
+          triggerAutoSync()
+        }
+      }
     } catch {
       setConnected(false)
+    }
+  }
+
+  async function triggerAutoSync() {
+    setSyncState('syncing')
+    try {
+      const res = await fetch('/api/whoop/sync', { method: 'POST' })
+      const data = await res.json()
+      if (res.ok) {
+        setSyncCount(data.synced)
+        setSyncState('done')
+        // Refresh data silently
+        const statusRes = await fetch('/api/whoop/status')
+        const statusData = await statusRes.json()
+        if (statusData.recent) setWhoopData(statusData.recent)
+      } else {
+        setSyncState('idle')
+      }
+    } catch {
+      setSyncState('idle')
     }
   }
 
@@ -230,7 +257,10 @@ function SettingsContent() {
       }
       setSyncCount(data.synced)
       setSyncState('done')
-      checkConnection()
+      // Refresh displayed data
+      const statusRes = await fetch('/api/whoop/status')
+      const statusData = await statusRes.json()
+      if (statusData.recent) setWhoopData(statusData.recent)
     } catch {
       setSyncError('Connection error')
       setSyncState('error')

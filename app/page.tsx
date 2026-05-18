@@ -97,8 +97,11 @@ export default async function Today() {
         </div>
       </div>
 
+      {/* AI Daily Insight — top of page, most actionable info first */}
+      <DailyInsight />
+
       {/* Section 2: Recovery */}
-      <FramedCard className="mx-4 mt-6 bg-card rounded-2xl border border-line p-4">
+      <FramedCard className="mx-4 mt-4 bg-card rounded-2xl border border-line p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <ISymbol size={14} className="text-ink3 opacity-60" />
@@ -256,9 +259,9 @@ export default async function Today() {
           </div>
           <div className="grid grid-cols-3 gap-3">
             <StatBlock
-              value={latest.weight_kg?.toFixed(1) ?? '—'}
-              unit="kg"
-              delta={latest.weight_kg != null ? (latest.weight_kg - GOALS.weight_kg) : null}
+              value={latest.weight_kg != null ? Math.round(latest.weight_kg * 2.20462).toString() : '—'}
+              unit="lbs"
+              delta={latest.weight_kg != null ? (latest.weight_kg - GOALS.weight_kg) * 2.20462 : null}
               label="Weight"
               positiveIsGood={false}
             />
@@ -271,9 +274,9 @@ export default async function Today() {
             />
             <div className="text-center">
               <p className="text-ink font-bold text-xl tabular-nums leading-tight">
-                {latest.lean_mass_kg?.toFixed(1) ?? '—'}
+                {latest.lean_mass_kg != null ? Math.round(latest.lean_mass_kg * 2.20462) : '—'}
               </p>
-              <p className="text-ink3 text-xs mt-0.5">kg lean</p>
+              <p className="text-ink3 text-xs mt-0.5">lbs lean</p>
             </div>
           </div>
         </FramedCard>
@@ -293,7 +296,7 @@ export default async function Today() {
           </Link>
           <div className="grid grid-cols-3 gap-3">
             <div className="text-center">
-              <p className="text-ink3 font-bold text-xl tabular-nums leading-tight">88.2<span className="text-sm font-normal">kg</span></p>
+              <p className="text-ink3 font-bold text-xl tabular-nums leading-tight">195<span className="text-sm font-normal">lbs</span></p>
               <p className="text-ink3 text-xs mt-0.5">Weight</p>
             </div>
             <div className="text-center">
@@ -301,15 +304,12 @@ export default async function Today() {
               <p className="text-ink3 text-xs mt-0.5">Body Fat</p>
             </div>
             <div className="text-center">
-              <p className="text-ink3 font-bold text-xl tabular-nums leading-tight">71.9</p>
-              <p className="text-ink3 text-xs mt-0.5">kg lean</p>
+              <p className="text-ink3 font-bold text-xl tabular-nums leading-tight">159</p>
+              <p className="text-ink3 text-xs mt-0.5">lbs lean</p>
             </div>
           </div>
         </FramedCard>
       )}
-
-      {/* AI Daily Insight */}
-      <DailyInsight />
 
       {/* Section 5: Hybrid Athlete Pro Tip */}
       <HybridAthleteTip dayOfWeek={new Date().getDay()} />
@@ -500,7 +500,8 @@ function RecoveryArc({ score, muted = false }: { score: number | null; muted?: b
       {/* Track */}
       <path
         d={`M ${sx} ${sy} A ${r} ${r} 0 ${fillLargeArc} 1 ${ex} ${ey}`}
-        fill="none" stroke="#1e293b" strokeWidth="10" strokeLinecap="round"
+        fill="none" strokeWidth="10" strokeLinecap="round"
+        style={{ stroke: 'var(--color-surface)' }}
       />
       {/* Fill */}
       {pct > 0.01 && (
@@ -510,10 +511,12 @@ function RecoveryArc({ score, muted = false }: { score: number | null; muted?: b
         />
       )}
       {/* Score */}
-      <text x="60" y="55" textAnchor="middle" fontSize="24" fontWeight="700" fill={muted ? '#64748b' : '#f1f5f9'} fontFamily="Inter, sans-serif">
+      <text x="60" y="55" textAnchor="middle" fontSize="24" fontWeight="700" fontFamily="Inter, sans-serif"
+        style={{ fill: muted ? 'var(--color-ink3)' : 'var(--color-ink)' }}>
         {score ?? '74'}
       </text>
-      <text x="60" y="70" textAnchor="middle" fontSize="9" fill="#64748b" fontFamily="Inter, sans-serif" letterSpacing="1">
+      <text x="60" y="70" textAnchor="middle" fontSize="9" fontFamily="Inter, sans-serif" letterSpacing="1"
+        style={{ fill: 'var(--color-ink3)' }}>
         RECOVERY
       </text>
     </svg>
@@ -566,7 +569,7 @@ function StatBlock({
       <p className="text-ink3 text-xs mt-0.5">{label}</p>
       {delta != null && (
         <p className={`text-xs font-semibold mt-0.5 ${deltaColor}`}>
-          {delta > 0 ? '+' : ''}{delta.toFixed(1)}{unit} to goal
+          {delta > 0 ? '+' : ''}{Math.round(Math.abs(delta))}{unit} {delta > 0 ? 'over' : 'to'} goal
         </p>
       )}
     </div>

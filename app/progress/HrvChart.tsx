@@ -21,12 +21,12 @@ export default function HrvChart({ data }: { data: HrvPoint[] }) {
       </div>
       <ResponsiveContainer width="100%" height={120}>
         <LineChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -24 }}>
-          <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 9 }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-          <YAxis tick={{ fill: '#64748b', fontSize: 9 }} tickLine={false} axisLine={false} />
+          <XAxis dataKey="date" tick={{ fill: 'var(--color-ink3)', fontSize: 9 }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+          <YAxis tick={{ fill: 'var(--color-ink3)', fontSize: 9 }} tickLine={false} axisLine={false} />
           <ReferenceArea y1={bandLow} y2={bandHigh} fill="#4a9eff" fillOpacity={0.08} />
           <Tooltip
-            contentStyle={{ background: '#131822', border: '1px solid #1f2937', borderRadius: 8, fontSize: 11 }}
-            labelStyle={{ color: '#94a3b8' }}
+            contentStyle={{ background: 'var(--color-card)', border: '1px solid var(--color-line)', borderRadius: 8, fontSize: 11, color: 'var(--color-ink)' }}
+            labelStyle={{ color: 'var(--color-ink3)' }}
             itemStyle={{ color: '#4a9eff' }}
           />
           <Line type="monotone" dataKey="hrv" stroke="#4a9eff" strokeWidth={2} dot={false} connectNulls />

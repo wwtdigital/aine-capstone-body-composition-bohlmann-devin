@@ -33,7 +33,7 @@ export default function MacroRing({
             cx={c} cy={c} r={r}
             fill="none"
             strokeWidth={strokeWidth}
-            stroke="#1a2030"
+            style={{ stroke: 'var(--color-surface)' }}
           />
           <circle
             cx={c} cy={c} r={r}

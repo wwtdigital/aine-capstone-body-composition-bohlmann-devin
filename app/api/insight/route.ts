@@ -92,12 +92,16 @@ export async function GET() {
   if (inbody.length > 0) {
     const latest = inbody[0]
     const prev = inbody[1]
+    const kgToLbs = (kg: number) => Math.round(kg * 2.20462)
     let trend = ''
     if (prev?.weight_kg != null && latest?.weight_kg != null) {
-      const diff = (latest.weight_kg - prev.weight_kg).toFixed(1)
-      trend = ` (${Number(diff) > 0 ? '+' : ''}${diff}kg since last scan)`
+      const diffLbs = kgToLbs(latest.weight_kg) - kgToLbs(prev.weight_kg)
+      trend = ` (${diffLbs > 0 ? '+' : ''}${diffLbs}lbs since last scan)`
     }
-    lines.push(`Body comp: ${latest.weight_kg}kg${trend}, ${latest.body_fat_pct}% BF, ${latest.lean_mass_kg}kg lean mass. Goal: ${GOALS.weight_kg}kg, ${GOALS.body_fat_pct}% BF.`)
+    const weightLbs = latest.weight_kg != null ? kgToLbs(latest.weight_kg) : null
+    const leanLbs = latest.lean_mass_kg != null ? kgToLbs(latest.lean_mass_kg) : null
+    const goalLbs = kgToLbs(GOALS.weight_kg)
+    lines.push(`Body comp: ${weightLbs}lbs${trend}, ${latest.body_fat_pct}% BF, ${leanLbs}lbs lean mass. Goal: ${goalLbs}lbs, ${GOALS.body_fat_pct}% BF.`)
   }
 
   if (whoopRows.length > 0) {

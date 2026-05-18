@@ -13,14 +13,13 @@ type Props = {
   proteinGoal: number
 }
 
-const AXIS = '#64748b'
 const TOOLTIP = {
-  contentStyle: { background: '#131822', border: '1px solid #1f2937', borderRadius: 10, color: '#f1f5f9' },
-  labelStyle: { color: '#94a3b8' },
-  itemStyle: { color: '#f1f5f9' },
+  contentStyle: { background: 'var(--color-card)', border: '1px solid var(--color-line)', borderRadius: 10, color: 'var(--color-ink)' },
+  labelStyle: { color: 'var(--color-ink3)' },
+  itemStyle: { color: 'var(--color-ink)' },
 }
 const AXIS_PROPS = {
-  tick: { fill: AXIS, fontSize: 12 },
+  tick: { fill: 'var(--color-ink3)', fontSize: 12 },
   axisLine: false as const,
   tickLine: false as const,
 }
@@ -38,7 +37,7 @@ export default function WeekCharts({ days, calorieGoal, proteinGoal }: Props) {
             <Tooltip {...TOOLTIP} />
             <Bar dataKey="calories" radius={[5, 5, 0, 0]}>
               {days.map((d, i) => (
-                <Cell key={i} fill={d.calories >= calorieGoal ? '#4a9eff' : '#1a2030'} />
+                <Cell key={i} fill={d.calories >= calorieGoal ? '#4a9eff' : 'var(--color-surface)'} />
               ))}
             </Bar>
           </BarChart>
@@ -55,7 +54,7 @@ export default function WeekCharts({ days, calorieGoal, proteinGoal }: Props) {
             <Tooltip {...TOOLTIP} />
             <Bar dataKey="protein" radius={[5, 5, 0, 0]}>
               {days.map((d, i) => (
-                <Cell key={i} fill={d.protein >= proteinGoal ? '#10b981' : '#1a2030'} />
+                <Cell key={i} fill={d.protein >= proteinGoal ? '#10b981' : 'var(--color-surface)'} />
               ))}
             </Bar>
           </BarChart>

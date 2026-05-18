@@ -32,18 +32,18 @@ export default function WeightChart({ readings, goalWeight }: Props) {
   return (
     <ResponsiveContainer width="100%" height={200}>
       <ComposedChart data={readings} margin={{ top: 4, right: 8, bottom: 0, left: -8 }}>
-        <CartesianGrid vertical={false} stroke="#1a1a1a" />
+        <CartesianGrid vertical={false} stroke="var(--color-line)" />
         <XAxis
           dataKey="date"
           tickFormatter={formatMonth}
-          tick={{ fontSize: 10, fill: '#888888' }}
+          tick={{ fontSize: 10, fill: 'var(--color-ink3)' }}
           axisLine={false}
           tickLine={false}
         />
         <YAxis
           yAxisId="weight"
           orientation="left"
-          tick={{ fontSize: 10, fill: '#888888' }}
+          tick={{ fontSize: 10, fill: 'var(--color-ink3)' }}
           axisLine={false}
           tickLine={false}
           domain={['auto', 'auto']}
@@ -51,25 +51,26 @@ export default function WeightChart({ readings, goalWeight }: Props) {
         <YAxis
           yAxisId="bf"
           orientation="right"
-          tick={{ fontSize: 10, fill: '#888888' }}
+          tick={{ fontSize: 10, fill: 'var(--color-ink3)' }}
           axisLine={false}
           tickLine={false}
           domain={['auto', 'auto']}
         />
         <Tooltip
           contentStyle={{
-            background: '#0a0a0a',
-            border: '1px solid #1a1a1a',
+            background: 'var(--color-card)',
+            border: '1px solid var(--color-line)',
             borderRadius: 12,
             fontSize: 11,
+            color: 'var(--color-ink)',
           }}
         />
         <ReferenceLine
           yAxisId="weight"
           y={goalWeight}
-          stroke="#888888"
+          stroke="var(--color-ink3)"
           strokeDasharray="4 2"
-          label={{ value: 'Goal', fontSize: 10, fill: '#888888' }}
+          label={{ value: 'Goal', fontSize: 10, fill: 'var(--color-ink3)' }}
         />
         <Line
           yAxisId="weight"

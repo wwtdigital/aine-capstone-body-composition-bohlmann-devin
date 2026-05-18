@@ -32,7 +32,7 @@ export default function MacroRadial({ calories, protein, carbs, fat, calGoal, pr
         >
           <RadialBar background={{ fill: 'var(--color-surface, #e8e4db)' }} dataKey="value" cornerRadius={7} />
           <Tooltip
-            contentStyle={{ background: '#131822', border: '1px solid #1f2937', borderRadius: 8, fontSize: 11 }}
+            contentStyle={{ background: 'var(--color-card)', border: '1px solid var(--color-line)', borderRadius: 8, fontSize: 11, color: 'var(--color-ink)' }}
             formatter={(value, name) => {
               const v = typeof value === 'number' ? value : 0
               const n = String(name ?? '')

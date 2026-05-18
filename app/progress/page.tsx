@@ -11,6 +11,8 @@ import BodyBattery from '@/components/BodyBattery'
 import FramedCard from '@/components/FramedCard'
 import ISymbol from '@/components/ISymbol'
 import GapAnalysis from '@/components/GapAnalysis'
+import ProgressTabBar from './ProgressTabBar'
+import { Suspense } from 'react'
 
 export const revalidate = 0
 
@@ -77,7 +79,16 @@ function generateSyntheticHrv(): { date: string; hrv: number }[] {
   })
 }
 
-export default async function ProgressPage() {
+const kgToLbs = (kg: number | null | undefined) =>
+  kg != null ? Math.round(kg * 2.20462) : null
+
+export default async function ProgressPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>
+}) {
+  const { tab = 'nutrition' } = await searchParams
+  const activeTab = (tab === 'body' || tab === 'ask') ? tab : 'nutrition'
   // Nutrition query (last 7 days)
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
 
@@ -156,32 +167,18 @@ export default async function ProgressPage() {
     <div className="min-h-screen bg-page pb-24">
       <div className="px-4 pt-12 pb-4 flex items-center justify-between">
         <h1 className="text-3xl font-semibold text-ink tracking-tight">Progress</h1>
-        <div className="flex items-center gap-3">
-          <Link href="/progress-photos" className="text-xs font-medium text-ink3 flex items-center gap-1">
-            <Camera size={12} />Photos ›
-          </Link>
-          <Link href="/muscles" className="text-brand text-sm font-semibold">
-            Muscle Map →
-          </Link>
-        </div>
+        <Link href="/progress-photos" className="text-xs font-medium text-ink3 flex items-center gap-1">
+          <Camera size={12} />Photos ›
+        </Link>
       </div>
 
-      {/* Sticky tab bar */}
-      <div className="bg-page/95 backdrop-blur-md sticky top-0 z-10 px-4 py-2 flex gap-2 border-b border-line">
-        <a href="#nutrition" className="px-4 py-1.5 rounded-xl text-xs font-semibold text-ink2 bg-surface border border-line active:scale-95 transition-transform">
-          Nutrition
-        </a>
-        <a href="#body" className="px-4 py-1.5 rounded-xl text-xs font-semibold text-ink2 bg-surface border border-line active:scale-95 transition-transform">
-          Body Comp
-        </a>
-        <a href="#ask" className="px-4 py-1.5 rounded-xl text-xs font-semibold text-ink2 bg-surface border border-line active:scale-95 transition-transform">
-          Ask AI
-        </a>
-      </div>
+      <Suspense>
+        <ProgressTabBar activeTab={activeTab as 'nutrition' | 'body' | 'ask'} />
+      </Suspense>
 
       <div className="px-4 pt-6 space-y-8">
         {/* ── Nutrition (7 Days) ── */}
-        <section id="nutrition" className="space-y-4">
+        <section id="nutrition" className={activeTab === 'nutrition' ? 'space-y-4' : 'hidden'}>
           <div className="flex items-center gap-3">
             <ISymbol size={14} className="text-ink3 opacity-60 shrink-0" />
             <span className="eyebrow shrink-0">Nutrition (7 Days)</span>
@@ -273,7 +270,7 @@ export default async function ProgressPage() {
         </section>
 
         {/* ── Body Composition ── */}
-        <section id="body" className="space-y-4">
+        <section id="body" className={activeTab === 'body' ? 'space-y-4' : 'hidden'}>
           <div className="flex items-center gap-3">
             <ISymbol size={14} className="text-ink3 opacity-60 shrink-0" />
             <span className="eyebrow shrink-0">Body Composition</span>
@@ -333,9 +330,9 @@ export default async function ProgressPage() {
                       <p className="text-ink3 text-xs">{daysDiff}d</p>
                     </div>
                     <div className="grid grid-cols-3 gap-4">
-                      <DeltaChip value={wDelta} unit="kg" label="Weight" lowerIsBetter={true} />
+                      <DeltaChip value={wDelta != null ? kgToLbs(wDelta) : null} unit="lbs" label="Weight" lowerIsBetter={true} />
                       <DeltaChip value={bDelta} unit="%" label="Body Fat" lowerIsBetter={true} />
-                      <DeltaChip value={lDelta} unit="kg" label="Lean Mass" lowerIsBetter={false} />
+                      <DeltaChip value={lDelta != null ? kgToLbs(lDelta) : null} unit="lbs" label="Lean Mass" lowerIsBetter={false} />
                     </div>
                   </FramedCard>
                 )
@@ -351,11 +348,11 @@ export default async function ProgressPage() {
                   <WeightChart
                     readings={readings.map(r => ({
                       date: new Date(r.reading_date).toISOString().split('T')[0],
-                      weight_kg: r.weight_kg ?? 0,
+                      weight_kg: kgToLbs(r.weight_kg) ?? 0,
                       body_fat_pct: r.body_fat_pct,
                       lean_mass_kg: r.lean_mass_kg,
                     }))}
-                    goalWeight={GOALS.weight_kg}
+                    goalWeight={kgToLbs(GOALS.weight_kg) ?? 0}
                   />
                   <div className="flex items-center gap-4 mt-3 pt-3 border-t border-line">
                     <div className="flex items-center gap-1.5"><div className="w-3 h-0.5 bg-brand rounded-full" /><span className="text-ink4 text-xs">Weight</span></div>
@@ -367,10 +364,10 @@ export default async function ProgressPage() {
               <div className="grid grid-cols-2 gap-3">
                 <GoalCard
                   label="Weight"
-                  value={latest.weight_kg?.toFixed(1) ?? '—'}
-                  unit="kg"
-                  goal={`${GOALS.weight_kg} kg`}
-                  delta={latest.weight_kg != null ? latest.weight_kg - GOALS.weight_kg : null}
+                  value={kgToLbs(latest.weight_kg)?.toString() ?? '—'}
+                  unit="lbs"
+                  goal={`${kgToLbs(GOALS.weight_kg)} lbs`}
+                  delta={latest.weight_kg != null ? kgToLbs(latest.weight_kg - GOALS.weight_kg) : null}
                   positiveIsGood={false}
                 />
                 <GoalCard
@@ -385,7 +382,15 @@ export default async function ProgressPage() {
 
               {readings.length >= 2 && (
                 <FramedCard className="bg-card rounded-2xl border border-line p-4">
-                  <BodyCompCharts data={chartData} weightGoal={GOALS.weight_kg} bfGoal={GOALS.body_fat_pct} />
+                  <BodyCompCharts
+                    data={chartData.map(d => ({
+                      ...d,
+                      weight: d.weight != null ? kgToLbs(d.weight) : null,
+                      lean: d.lean != null ? kgToLbs(d.lean) : null,
+                    }))}
+                    weightGoal={kgToLbs(GOALS.weight_kg) ?? 0}
+                    bfGoal={GOALS.body_fat_pct}
+                  />
                 </FramedCard>
               )}
 
@@ -417,9 +422,9 @@ export default async function ProgressPage() {
                         )}
                       </div>
                       <div className="flex gap-5">
-                        <Metric value={r.weight_kg?.toFixed(1)} unit="kg" />
+                        <Metric value={kgToLbs(r.weight_kg)?.toString()} unit="lbs" />
                         <Metric value={r.body_fat_pct?.toFixed(1)} unit="%" label="bf" />
-                        <Metric value={r.lean_mass_kg?.toFixed(1)} unit="" label="lean" />
+                        <Metric value={kgToLbs(r.lean_mass_kg)?.toString()} unit="" label="lean lbs" />
                       </div>
                     </div>
                   )
@@ -430,7 +435,7 @@ export default async function ProgressPage() {
         </section>
 
         {/* ── Ask AI ── */}
-        <section id="ask" className="space-y-4">
+        <section id="ask" className={activeTab === 'ask' ? 'space-y-4' : 'hidden'}>
           <div className="flex items-center gap-3">
             <ISymbol size={14} className="text-ink3 opacity-60 shrink-0" />
             <span className="eyebrow shrink-0">Ask AI</span>

@@ -50,11 +50,11 @@ export default function BodyBattery() {
               <stop offset="95%" stopColor="#6366f1" stopOpacity={0.02} />
             </linearGradient>
           </defs>
-          <XAxis dataKey="time" tick={{ fill: '#475569', fontSize: 8 }} tickLine={false} axisLine={false} interval={5} />
-          <YAxis domain={[0, 100]} tick={{ fill: '#475569', fontSize: 8 }} tickLine={false} axisLine={false} />
+          <XAxis dataKey="time" tick={{ fill: 'var(--color-ink3)', fontSize: 8 }} tickLine={false} axisLine={false} interval={5} />
+          <YAxis domain={[0, 100]} tick={{ fill: 'var(--color-ink3)', fontSize: 8 }} tickLine={false} axisLine={false} />
           <Tooltip
-            contentStyle={{ background: '#131822', border: '1px solid #1f2937', borderRadius: 8, fontSize: 11 }}
-            labelStyle={{ color: '#94a3b8' }}
+            contentStyle={{ background: 'var(--color-card)', border: '1px solid var(--color-line)', borderRadius: 8, fontSize: 11, color: 'var(--color-ink)' }}
+            labelStyle={{ color: 'var(--color-ink3)' }}
             itemStyle={{ color: '#6366f1' }}
           />
           <Area type="monotone" dataKey="energy" stroke="#6366f1" strokeWidth={2} fill="url(#batteryGrad)" />

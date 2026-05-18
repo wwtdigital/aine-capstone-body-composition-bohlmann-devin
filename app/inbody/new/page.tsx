@@ -72,7 +72,7 @@ export default function InBodyNewPage() {
             onChange={e => set('reading_date', e.target.value)}
             required
             className={inputClass}
-            style={{ minHeight: '48px', colorScheme: 'dark' }}
+            style={{ minHeight: '48px' }}
           />
         </div>
 
