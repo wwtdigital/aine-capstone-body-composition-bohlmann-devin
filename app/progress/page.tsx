@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { db } from '@/lib/db'
 import { GOALS } from '@/lib/goals'
 import { Plus, Upload, Camera } from 'lucide-react'
+import WeightChart from '@/components/WeightChart'
 import WeekCharts from '../week/WeekCharts'
 import BodyCompCharts from '../month/BodyCompCharts'
 import HrvChart from './HrvChart'
@@ -154,9 +155,14 @@ export default async function ProgressPage() {
     <div className="min-h-screen bg-page pb-24">
       <div className="px-4 pt-12 pb-4 flex items-center justify-between">
         <h1 className="text-3xl font-semibold text-ink tracking-tight">Progress</h1>
-        <Link href="/muscles" className="text-brand text-sm font-semibold">
-          Muscle Map →
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/progress-photos" className="text-xs font-medium text-ink3 flex items-center gap-1">
+            <Camera size={12} />Photos ›
+          </Link>
+          <Link href="/muscles" className="text-brand text-sm font-semibold">
+            Muscle Map →
+          </Link>
+        </div>
       </div>
 
       {/* Sticky tab bar */}
@@ -336,6 +342,29 @@ export default async function ProgressPage() {
                   </FramedCard>
                 )
               })()}
+
+              {/* Weight Trend — only if we have readings */}
+              {readings.length > 1 && (
+                <FramedCard className="bg-card rounded-2xl border border-line p-4 mt-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <ISymbol size={14} className="text-ink3 opacity-60" />
+                    <span className="eyebrow">Weight Trend</span>
+                  </div>
+                  <WeightChart
+                    readings={readings.map(r => ({
+                      date: new Date(r.reading_date).toISOString().split('T')[0],
+                      weight_kg: r.weight_kg ?? 0,
+                      body_fat_pct: r.body_fat_pct,
+                      lean_mass_kg: r.lean_mass_kg,
+                    }))}
+                    goalWeight={GOALS.weight_kg}
+                  />
+                  <div className="flex items-center gap-4 mt-3 pt-3 border-t border-line">
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-0.5 bg-brand rounded-full" /><span className="text-ink4 text-xs">Weight</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-0.5 bg-warn rounded-full" /><span className="text-ink4 text-xs">Body fat %</span></div>
+                  </div>
+                </FramedCard>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <GoalCard

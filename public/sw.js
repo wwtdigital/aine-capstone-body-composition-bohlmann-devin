@@ -23,3 +23,28 @@ self.addEventListener('fetch', (e) => {
     fetch(e.request).catch(() => caches.match(e.request))
   )
 })
+
+self.addEventListener('push', (e) => {
+  const data = e.data?.json() ?? {}
+  e.waitUntil(
+    self.registration.showNotification(data.title ?? 'Body Comp Copilot', {
+      body: data.body ?? '',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      tag: data.tag ?? 'bcc-notification',
+      data: { url: data.url ?? '/' },
+    })
+  )
+})
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close()
+  e.waitUntil(
+    clients.matchAll({ type: 'window' }).then((list) => {
+      const url = e.notification.data?.url ?? '/'
+      const existing = list.find((c) => c.url.includes(url))
+      if (existing) return existing.focus()
+      return clients.openWindow(url)
+    })
+  )
+})

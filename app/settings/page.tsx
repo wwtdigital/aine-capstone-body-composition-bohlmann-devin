@@ -6,6 +6,7 @@ import { Activity, CheckCircle, AlertCircle, RefreshCw, Unlink, ExternalLink, Za
 import { useTheme } from '@/components/ThemeProvider'
 import FramedCard from '@/components/FramedCard'
 import ISymbol from '@/components/ISymbol'
+import NotificationToggle from '@/components/NotificationToggle'
 
 type Goals = {
   daily_calories: number
@@ -387,6 +388,9 @@ function SettingsContent() {
             </FramedCard>
           </div>
         )}
+
+        {/* Notifications */}
+        <NotificationToggle />
 
         {/* Goals */}
         <GoalsSection />

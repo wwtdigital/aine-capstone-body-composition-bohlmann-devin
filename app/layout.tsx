@@ -5,6 +5,7 @@ import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration'
 import PwaInstallPrompt from '@/components/PwaInstallPrompt'
 import ThemeProvider from '@/components/ThemeProvider'
 import FloatingChat from '@/components/FloatingChat'
+import OnboardingGate from '@/components/OnboardingGate'
 import './globals.css'
 
 const inter = Inter({
@@ -59,6 +60,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full bg-page text-ink antialiased">
         <ThemeProvider>
+          <OnboardingGate />
           <ServiceWorkerRegistration />
           <PwaInstallPrompt />
           {children}

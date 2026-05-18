@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server'
 
 const PUBLIC_PREFIXES = [
   '/login',
+  '/onboarding',
   '/api/auth/login',
   '/api/auth/check',
   '/api/whoop/callback',

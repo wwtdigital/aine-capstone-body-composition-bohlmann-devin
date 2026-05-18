@@ -2,11 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Camera, TrendingUp, Sparkles, Settings } from 'lucide-react'
+import { Home, PenLine, TrendingUp, Sparkles, Settings } from 'lucide-react'
 
 const tabs = [
   { href: '/', icon: Home, label: 'Today' },
-  { href: '/log', icon: Camera, label: 'Log' },
+  { href: '/log', icon: PenLine, label: 'Log' },
   { href: '/progress', icon: TrendingUp, label: 'Progress' },
   { href: '/gap', icon: Sparkles, label: 'AI' },
   { href: '/settings', icon: Settings, label: 'Settings' },
