@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { RotateCcw } from 'lucide-react'
+import { RotateCcw, Camera, X } from 'lucide-react'
 import FramedCard from '@/components/FramedCard'
 
 type MealItem = {
@@ -220,7 +220,7 @@ export default function LogPage() {
                 style={{ minHeight: '260px' }}
               >
                 <div className="flex flex-col items-center gap-3 py-12 px-6 text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-surface flex items-center justify-center text-3xl">📷</div>
+                  <div className="w-16 h-16 rounded-2xl bg-surface flex items-center justify-center"><Camera size={28} className="text-ink3" /></div>
                   <div>
                     <p className="text-ink font-semibold text-lg">Take a photo</p>
                     <p className="text-ink3 text-sm mt-1">or choose from library</p>
@@ -343,7 +343,7 @@ export default function LogPage() {
                   onClick={() => removeItem(idx)}
                   className="text-ink3 text-sm shrink-0 pt-1 w-8 h-8 flex items-center justify-center"
                 >
-                  ✕
+                  <X size={14} />
                 </button>
               </div>
               <input

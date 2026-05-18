@@ -224,7 +224,7 @@ export default async function Today() {
             <span className="eyebrow">7-Day Adherence</span>
           </div>
           {streak > 0 && (
-            <span className="text-xs font-bold text-ok">🔥 {streak}-day streak</span>
+            <span className="text-xs font-semibold text-ok tabular-nums">{streak}-day streak</span>
           )}
         </div>
         <div className="flex items-end justify-between gap-1">

@@ -23,7 +23,7 @@ Primary AI collaborators: Claude (Cowork + enterprise), Devin (Cognition).
 - No fabricating data — flag the gap
 - No over-apologizing — acknowledge, fix, move on
 - No scope expansion without flagging first
-- No emoji unless Will uses them first
+- No emoji — ever. Not in code, not in UI, not in responses. Use Lucide icons or plain text instead.
 - No corporate filler, excessive hedging
 
 ## Technical Depth

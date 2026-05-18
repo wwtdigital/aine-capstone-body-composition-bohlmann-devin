@@ -182,7 +182,7 @@ export default async function ProgressPage() {
             <ISymbol size={14} className="text-ink3 opacity-60 shrink-0" />
             <span className="eyebrow shrink-0">Nutrition (7 Days)</span>
             <div className="flex-1 h-px bg-line" />
-            {streak > 0 && <span className="text-xs font-bold text-ok shrink-0">🔥 {streak}-day streak</span>}
+            {streak > 0 && <span className="text-xs font-semibold text-ok shrink-0 tabular-nums">{streak}-day streak</span>}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
