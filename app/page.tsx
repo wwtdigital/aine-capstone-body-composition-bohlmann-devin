@@ -4,6 +4,7 @@ import Link from 'next/link'
 import MacroRing from '@/components/MacroRing'
 import MealList from '@/components/MealSheet'
 import DailyInsight from '@/components/DailyInsight'
+import { Dumbbell } from 'lucide-react'
 
 export const revalidate = 0
 
@@ -293,7 +294,10 @@ export default async function Today() {
       {/* AI Daily Insight */}
       <DailyInsight />
 
-      {/* Section 5: Meals Today */}
+      {/* Section 5: Hybrid Athlete Pro Tip */}
+      <HybridAthleteTip dayOfWeek={new Date().getDay()} />
+
+      {/* Section 6: Meals Today */}
       <div className="mx-4 mt-4">
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs font-semibold text-ink3 uppercase tracking-wider">Meals</span>
@@ -313,6 +317,107 @@ export default async function Today() {
         ) : (
           <MealList meals={meals} />
         )}
+      </div>
+    </div>
+  )
+}
+
+const HYBRID_TIPS: { title: string; body: string; tag: string }[] = [
+  {
+    tag: 'Session Order',
+    title: 'Lift before you run — always.',
+    body: 'On concurrent-training days (gym + soccer), strength first preserves mTOR signaling. Aerobic work activates AMPK which suppresses mTOR; reversing the order blunts hypertrophy by up to 30%. Keep ≥6h between sessions when possible.',
+  },
+  {
+    tag: 'Protein Distribution',
+    title: '4 doses of 40g beat 3 doses of 55g.',
+    body: 'With 8 sessions per week, your muscle protein synthesis cycles faster than a typical lifter. Hitting the ~0.05g/kg leucine threshold 4× daily (every ~4–5h) drives more MPS per gram of protein than larger, less frequent doses.',
+  },
+  {
+    tag: 'Carb Periodization',
+    title: 'Front-load carbs on soccer days, reduce on lift-only days.',
+    body: '60–70g low-GI carbs (oats, sweet potato) 2–3h before kick-off. Post-match: 1.2g/kg body weight of high-GI carbs (white rice, banana) within 30min for maximal glycogen resynthesis — you\'re likely training again within 24h. Cut carbs 15–20% on lifting-only days when glycolytic demand is lower.',
+  },
+  {
+    tag: 'Peri-Workout Fat',
+    title: 'Keep fat <15g in the 2h window around any session.',
+    body: 'Dietary fat slows gastric emptying and competes with carbohydrate oxidation at the 70–85% VO₂max zones typical of team sport. Save fat-dense meals for evenings when glycolytic demand drops.',
+  },
+  {
+    tag: 'Creatine',
+    title: 'Creatine helps soccer sprints as much as lifts.',
+    body: '3–5g/day creatine monohydrate tops up phosphocreatine for both maximal-effort sprints (PCr system) and reduces blood lactate accumulation at submaximal intensities. At 8 sessions/week, the anti-inflammatory secondary effect on DOMS is a real daily benefit.',
+  },
+  {
+    tag: 'Sleep Quality',
+    title: '7.5h minimum — non-negotiable for concurrent athletes.',
+    body: 'At <7h sleep, GH pulse amplitude drops ~50% and the cortisol:testosterone ratio shifts unfavorably. For concurrent athletes this is more damaging than for single-sport athletes because both aerobic and neural adaptations require overnight consolidation.',
+  },
+  {
+    tag: 'Anti-Inflammatory',
+    title: 'Omega-3s reduce the adaptation interference effect.',
+    body: '2–3g EPA+DHA/day attenuates the elevated systemic inflammation unique to concurrent training, preserving satellite cell activity. Time it away from immediately post-training (antioxidants can blunt some acute signaling) — take with a main meal 3+ hours post-session.',
+  },
+  {
+    tag: 'Body Recomp',
+    title: 'To lose fat but keep muscle at this volume: eat at ~−250 kcal deficit on rest days only.',
+    body: 'Running a deficit on training days at 8 sessions/week impairs recovery and MPS. Restrict only on full rest days. On any training day, eat at maintenance or slight surplus. This cycling approach has been shown to preserve LBM better than a continuous deficit at high training frequencies.',
+  },
+  {
+    tag: 'Periodization',
+    title: 'Block your training: don\'t peak strength and soccer fitness simultaneously.',
+    body: 'Concurrent adaptation conflicts are worst when both modalities are at high intensity simultaneously. Schedule 4–6 week blocks that prioritize one: e.g., strength block (4×/week lift, 2×/week soccer maintenance), then a soccer conditioning block. Muscle mass gains compound faster this way than grinding both hard year-round.',
+  },
+  {
+    tag: 'Electrolytes',
+    title: 'Pre-load sodium the night before hard soccer days.',
+    body: 'Sweat rate in high-intensity team sport can hit 1.5–2L/h. A 500mg sodium pre-load the evening before, with adequate water, expands plasma volume by ~4–5% and reduces cardiovascular strain — measurably reducing RPE at the same pace.',
+  },
+  {
+    tag: 'Caffeine Timing',
+    title: 'Caffeine 45–60min pre-session; avoid post-6pm on double days.',
+    body: '3–6mg/kg caffeine improves both maximal strength output and endurance performance. For double-day sessions, take it before the morning session only — afternoon caffeine extends adenosine half-life, compromising the deep sleep needed for recovery between sessions.',
+  },
+  {
+    tag: 'Micronutrition',
+    title: 'Iron and Vitamin D are the two most likely deficiencies at this volume.',
+    body: 'High-intensity endurance sport increases red cell turnover (footstrike hemolysis in running, micro-bleeds). Vitamin D deficiency is near-universal in athletes training indoors and correlates with both strength and VO₂max. Get levels tested; don\'t guess.',
+  },
+  {
+    tag: 'Recovery Nutrition',
+    title: 'Tart cherry + collagen beats most recovery supplements.',
+    body: '30mL tart cherry concentrate twice daily reduces DOMS by 20–25% via anthocyanin-driven COX-2 inhibition without blunting adaptation. 15g collagen + 200mg Vitamin C 30–60min before a session reduces connective tissue injury risk — relevant when loading tendons and ligaments across 8 sessions/week.',
+  },
+  {
+    tag: 'VO₂ + Muscle Balance',
+    title: 'Don\'t let aerobic base erode in heavy lifting blocks.',
+    body: 'Two 30-min Zone 2 sessions per week (cycling preferred — lower eccentric load) maintain mitochondrial density and cardiac output without activating the AMPK cascade strongly enough to interfere with hypertrophy. Below this threshold, aerobic base declines within 2 weeks.',
+  },
+]
+
+function HybridAthleteTip({ dayOfWeek }: { dayOfWeek: number }) {
+  // Rotate through all tips based on day-of-year so each day shows a different tip
+  const dayOfYear = Math.floor(Date.now() / 86400000)
+  const tip = HYBRID_TIPS[dayOfYear % HYBRID_TIPS.length]
+
+  return (
+    <div className="mx-4 mt-4">
+      <div className="flex items-center gap-2 mb-2">
+        <Dumbbell size={13} className="text-ink3" />
+        <span className="text-xs font-semibold text-ink3 uppercase tracking-wider">Hybrid Athlete</span>
+      </div>
+      <div className="bg-gradient-to-br from-brand/8 via-card to-card rounded-2xl border border-brand/20 p-4">
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 shrink-0 text-[10px] font-bold uppercase tracking-wider text-brand bg-brand/10 px-2 py-0.5 rounded-full">
+            {tip.tag}
+          </span>
+        </div>
+        <p className="text-ink font-semibold text-sm mt-2 leading-snug">{tip.title}</p>
+        <p className="text-ink3 text-xs mt-1.5 leading-relaxed">{tip.body}</p>
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-line">
+          <p className="text-ink4 text-[10px] font-medium uppercase tracking-wide">Science-backed · 5× lift + 3× soccer</p>
+          <p className="text-ink4 text-[10px]">{(dayOfYear % HYBRID_TIPS.length) + 1}/{HYBRID_TIPS.length}</p>
+        </div>
       </div>
     </div>
   )
