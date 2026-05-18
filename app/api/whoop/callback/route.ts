@@ -7,15 +7,19 @@ export async function GET(request: NextRequest) {
   const error = searchParams.get('error')
 
   if (error || !code) {
-    return NextResponse.redirect(new URL('/settings?whoop=error', request.url))
+    const url = new URL('/settings', request.url)
+    url.searchParams.set('whoop', 'error')
+    url.searchParams.set('detail', error ?? 'no_code')
+    return NextResponse.redirect(url)
   }
 
+  const redirectUri = process.env.WHOOP_REDIRECT_URI ?? ''
   const params = new URLSearchParams({
     grant_type: 'authorization_code',
     code,
-    client_id: process.env.WHOOP_CLIENT_ID!,
-    client_secret: process.env.WHOOP_CLIENT_SECRET!,
-    redirect_uri: process.env.WHOOP_REDIRECT_URI!,
+    client_id: process.env.WHOOP_CLIENT_ID ?? '',
+    client_secret: process.env.WHOOP_CLIENT_SECRET ?? '',
+    redirect_uri: redirectUri,
   })
 
   let tokenData: { access_token: string; refresh_token: string; expires_in: number }
@@ -26,13 +30,20 @@ export async function GET(request: NextRequest) {
       body: params.toString(),
     })
     if (!res.ok) {
-      console.error('Whoop token exchange failed:', res.status, await res.text())
-      return NextResponse.redirect(new URL('/settings?whoop=error', request.url))
+      const body = await res.text()
+      console.error('Whoop token exchange failed:', res.status, body)
+      const url = new URL('/settings', request.url)
+      url.searchParams.set('whoop', 'error')
+      url.searchParams.set('detail', `${res.status}: ${body.slice(0, 200)}`)
+      return NextResponse.redirect(url)
     }
     tokenData = await res.json()
   } catch (err) {
     console.error('Whoop token exchange error:', err)
-    return NextResponse.redirect(new URL('/settings?whoop=error', request.url))
+    const url = new URL('/settings', request.url)
+    url.searchParams.set('whoop', 'error')
+    url.searchParams.set('detail', err instanceof Error ? err.message : 'network_error')
+    return NextResponse.redirect(url)
   }
 
   const expiresAt = Date.now() + tokenData.expires_in * 1000

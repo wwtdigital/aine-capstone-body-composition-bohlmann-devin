@@ -268,9 +268,14 @@ function SettingsContent() {
           </div>
         )}
         {banner === 'error' && (
-          <div className="flex items-center gap-3 bg-bad/10 border border-bad/30 rounded-2xl p-4">
-            <AlertCircle size={18} className="text-bad shrink-0" />
-            <p className="text-bad text-sm font-medium">Whoop connection failed. Try again.</p>
+          <div className="bg-bad/10 border border-bad/30 rounded-2xl p-4 space-y-1">
+            <div className="flex items-center gap-3">
+              <AlertCircle size={18} className="text-bad shrink-0" />
+              <p className="text-bad text-sm font-medium">Whoop connection failed. Try again.</p>
+            </div>
+            {searchParams.get('detail') && (
+              <p className="text-bad/70 text-xs pl-7 font-mono break-all">{searchParams.get('detail')}</p>
+            )}
           </div>
         )}
 
