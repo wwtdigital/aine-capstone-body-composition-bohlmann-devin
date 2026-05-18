@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { RotateCcw } from 'lucide-react'
 
 type MealItem = {
@@ -182,6 +183,13 @@ export default function LogPage() {
         <div className="px-4 pt-12 pb-6">
           <h1 className="text-2xl font-bold text-ink tracking-tight">Log Meal</h1>
           <p className="text-ink3 text-sm">{mode === 'photo' ? 'Photo-based analysis' : 'Text-based analysis'}</p>
+        </div>
+
+        <div className="px-4 mb-4">
+          <Link href="/log/workout" className="flex items-center justify-between bg-surface border border-line rounded-2xl px-4 py-3">
+            <span className="text-ink3 text-sm">Lifting or soccer today?</span>
+            <span className="text-brand text-sm font-semibold">Log Workout →</span>
+          </Link>
         </div>
 
         {/* Full-width pill toggle */}

@@ -303,6 +303,7 @@ export default async function Today() {
           <span className="text-xs font-semibold text-ink3 uppercase tracking-wider">Meals</span>
           <div className="flex items-center gap-3">
             <Link href="/gallery" className="text-xs font-semibold text-ink3">Gallery</Link>
+            <Link href="/log/workout" className="text-xs font-semibold text-ink3">+ Log workout</Link>
             <Link href="/log" className="text-xs font-semibold text-brand">+ Log meal</Link>
           </div>
         </div>

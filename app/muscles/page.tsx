@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
+import { Camera, X } from 'lucide-react'
 
 type Volume = 'low' | 'medium' | 'high'
 type Region = 'front' | 'back'
@@ -14,9 +15,11 @@ interface Muscle {
   devScore: number
   lastTrainedHoursAgo: number
   volume: Volume
+  synthetic: boolean // true = no real data for this muscle yet
 }
 
-const MUSCLES: Muscle[] = [
+// Base data — synthetic fallback values preserved exactly as before
+const BASE_MUSCLES: Omit<Muscle, 'synthetic'>[] = [
   // Front body
   { id: 'chest',       name: 'Chest',       region: 'front', devScore: 6.5, lastTrainedHoursAgo: 20, volume: 'high' },
   { id: 'front-delt',  name: 'Front Delt',  region: 'front', devScore: 7.0, lastTrainedHoursAgo: 20, volume: 'medium' },
@@ -41,11 +44,11 @@ function recoveryPct(m: Muscle): number {
 }
 
 // Hex values pulled directly from design tokens
-const HEX_OK   = '#10b981'
-const HEX_WARN = '#f59e0b'
-const HEX_BAD  = '#ef4444'
-const HEX_BRAND = '#4a9eff'
-const HEX_INK3 = '#64748b'
+const HEX_OK      = '#10b981'
+const HEX_WARN    = '#f59e0b'
+const HEX_BAD     = '#ef4444'
+const HEX_BRAND   = '#4a9eff'
+const HEX_INK3    = '#64748b'
 const HEX_SURFACE = '#1a2030'
 
 function recoveryColor(m: Muscle): string {
@@ -240,7 +243,7 @@ function MuscleListItem({ muscle, tab, selected, onSelect }: MuscleListItemProps
       {tab === 'recovery' ? (
         <div className="mt-1 pl-5">
           <p className="text-ink3 text-xs">
-            {muscle.lastTrainedHoursAgo}h ago · {pct}% recovered
+            {Math.round(muscle.lastTrainedHoursAgo)}h ago · {pct}% recovered
           </p>
           <RecoveryBar pct={pct} />
         </div>
@@ -261,18 +264,201 @@ function MuscleListItem({ muscle, tab, selected, onSelect }: MuscleListItemProps
   )
 }
 
+// ── Scan Modal ────────────────────────────────────────────────────────────────
+
+interface ScanModalProps {
+  onClose: () => void
+  onSuccess: (scores: Record<string, number>, notes: string) => void
+}
+
+function ScanModal({ onClose, onSuccess }: ScanModalProps) {
+  const [file, setFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [successMsg, setSuccessMsg] = useState<string | null>(null)
+
+  function handleFile(f: File) {
+    setFile(f)
+    const url = URL.createObjectURL(f)
+    setPreview(url)
+  }
+
+  async function handleAnalyze() {
+    if (!file) return
+    setLoading(true)
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+          const result = reader.result as string
+          // Strip data URI prefix — send raw base64 only
+          resolve(result.split(',')[1])
+        }
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+
+      const res = await fetch('/api/muscles/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: base64, mediaType: file.type }),
+      })
+
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Analysis failed')
+      }
+
+      const data = await res.json()
+      setSuccessMsg(data.notes || 'Assessment complete.')
+      onSuccess(data.scores, data.notes)
+
+      setTimeout(() => {
+        onClose()
+      }, 2000)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Something went wrong')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+      <div className="bg-card border border-line rounded-2xl w-full max-w-sm p-5 relative">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-ink3 hover:text-ink transition-colors"
+          aria-label="Close"
+        >
+          <X size={18} />
+        </button>
+
+        <h2 className="text-ink font-bold text-base mb-0.5">Physique Assessment</h2>
+        <p className="text-ink3 text-xs mb-4">
+          Take or upload a front or back pose photo. Claude will assess muscle development.
+        </p>
+
+        {/* Upload area */}
+        <label className="block cursor-pointer">
+          <div className={`border-2 border-dashed border-line rounded-xl flex flex-col items-center justify-center py-6 transition-colors ${preview ? 'border-brand/50' : 'hover:border-brand/40'}`}>
+            {preview ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={preview} alt="Selected physique" className="max-h-48 rounded-lg object-contain" />
+            ) : (
+              <>
+                <Camera size={28} className="text-ink3 mb-2" />
+                <span className="text-ink3 text-xs">Tap to select or capture photo</span>
+              </>
+            )}
+          </div>
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
+          />
+        </label>
+
+        {successMsg ? (
+          <div className="mt-4 rounded-xl bg-surface border border-line px-3 py-2.5">
+            <p className="text-ok text-xs font-semibold mb-0.5">Assessment saved</p>
+            <p className="text-ink3 text-xs">{successMsg}</p>
+          </div>
+        ) : (
+          <button
+            onClick={handleAnalyze}
+            disabled={!file || loading}
+            className={`mt-4 w-full py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+              file && !loading
+                ? 'bg-brand text-page hover:bg-brand/90'
+                : 'bg-surface text-ink4 cursor-not-allowed'
+            }`}
+          >
+            {loading ? 'Analyzing physique...' : 'Analyze'}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function MusclesPage() {
   const [tab, setTab] = useState<Tab>('recovery')
   const [region, setRegion] = useState<Region>('front')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [showScan, setShowScan] = useState(false)
 
-  const visibleMuscles = MUSCLES.filter(m => m.region === region)
+  // Recovery overrides from real workout data: muscleId → { lastTrainedAt, volume }
+  const [recoveryData, setRecoveryData] = useState<
+    Record<string, { lastTrainedAt: number; volume: Volume }>
+  >({})
+
+  // Dev score overrides from physique assessment: muscleId → score
+  const [devScores, setDevScores] = useState<Record<string, number>>({})
+
+  // Last assessment timestamp (ms)
+  const [lastAssessedAt, setLastAssessedAt] = useState<number | null>(null)
+
+  // Whether ALL muscles are still on synthetic recovery data
+  const allSynthetic = useMemo(
+    () => BASE_MUSCLES.every(m => !recoveryData[m.id]),
+    [recoveryData]
+  )
+
+  // Merged muscle list — derived from base + real data overrides
+  const muscles: Muscle[] = useMemo(() => {
+    const now = Date.now()
+    return BASE_MUSCLES.map(base => {
+      const real = recoveryData[base.id]
+      const hoursAgo = real
+        ? (now - real.lastTrainedAt) / 3_600_000
+        : base.lastTrainedHoursAgo
+      const volume = real ? real.volume : base.volume
+      const devScore = devScores[base.id] ?? base.devScore
+      return {
+        ...base,
+        lastTrainedHoursAgo: hoursAgo,
+        volume,
+        devScore,
+        synthetic: !real,
+      }
+    })
+  }, [recoveryData, devScores])
+
+  // Fetch real recovery data on mount
+  useEffect(() => {
+    fetch('/api/workouts/recent-by-muscle')
+      .then(r => r.json())
+      .then((data: Record<string, { lastTrainedAt: number; volume: Volume }>) => {
+        if (data && typeof data === 'object') setRecoveryData(data)
+      })
+      .catch(() => { /* silent — synthetic data stays */ })
+  }, [])
+
+  // Fetch latest physique assessment on mount
+  useEffect(() => {
+    fetch('/api/muscles/latest-assessment')
+      .then(r => r.json())
+      .then((data: { scores: Record<string, number>; notes: string; assessedAt: number } | null) => {
+        if (data?.scores) {
+          setDevScores(data.scores)
+          setLastAssessedAt(data.assessedAt)
+        }
+      })
+      .catch(() => { /* silent */ })
+  }, [])
+
+  const visibleMuscles = useMemo(
+    () => muscles.filter(m => m.region === region),
+    [muscles, region]
+  )
 
   function handleSelectMuscle(id: string) {
     setSelectedId(prev => (prev === id ? null : id))
-    // Scroll to list item
     setTimeout(() => {
       const el = document.getElementById(`muscle-${id}`)
       el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
@@ -280,29 +466,52 @@ export default function MusclesPage() {
   }
 
   function handleDiagramSelect(id: string) {
-    // If the muscle is in the other region, switch to it first
-    const muscle = MUSCLES.find(m => m.id === id)
+    const muscle = muscles.find(m => m.id === id)
     if (muscle && muscle.region !== region) setRegion(muscle.region)
     handleSelectMuscle(id)
   }
 
+  const handleScanSuccess = useCallback(
+    (scores: Record<string, number>, _notes: string) => {
+      setDevScores(prev => ({ ...prev, ...scores }))
+      setLastAssessedAt(Date.now())
+    },
+    []
+  )
+
+  const lastAssessedLabel = lastAssessedAt
+    ? new Date(lastAssessedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+    : null
+
   return (
     <div className="min-h-screen bg-page pb-24">
       {/* Header */}
-      <div className="px-4 pt-12 pb-4">
-        <h1 className="text-2xl font-bold text-ink tracking-tight">Muscles</h1>
-        <p className="text-ink3 text-sm mt-0.5">Hybrid Athlete Tracker</p>
+      <div className="px-4 pt-12 pb-4 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-ink tracking-tight">Muscles</h1>
+          <p className="text-ink3 text-sm mt-0.5">Hybrid Athlete Tracker</p>
+        </div>
+        <button
+          onClick={() => setShowScan(true)}
+          className="mt-1 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface border border-line text-ink3 hover:text-ink text-xs font-medium transition-colors"
+          aria-label="Scan physique"
+        >
+          <Camera size={14} />
+          Scan Physique
+        </button>
       </div>
 
-      {/* Coming Soon banner */}
-      <div className="mx-4 mb-4 rounded-xl bg-surface border border-line px-4 py-3">
-        <p className="text-warn text-xs font-medium">
-          Training data from future workout logging will update this automatically. Currently showing synthetic data.
-        </p>
-      </div>
+      {/* Synthetic data banner — only shown when ALL muscles lack real data */}
+      {allSynthetic && (
+        <div className="mx-4 mb-4 rounded-xl bg-surface border border-line px-4 py-3">
+          <p className="text-warn text-xs font-medium">
+            Using synthetic data — log workouts to see real recovery
+          </p>
+        </div>
+      )}
 
       {/* Tab bar */}
-      <div className="px-4 pb-3 flex gap-2">
+      <div className="px-4 pb-3 flex gap-2 items-center">
         <button
           onClick={() => setTab('recovery')}
           className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-colors border ${
@@ -323,6 +532,9 @@ export default function MusclesPage() {
         >
           Development
         </button>
+        {tab === 'development' && lastAssessedLabel && (
+          <span className="text-ink4 text-xs ml-1">Last assessed: {lastAssessedLabel}</span>
+        )}
       </div>
 
       {/* Region toggle */}
@@ -421,6 +633,14 @@ export default function MusclesPage() {
           ← Progress
         </Link>
       </div>
+
+      {/* Scan modal */}
+      {showScan && (
+        <ScanModal
+          onClose={() => setShowScan(false)}
+          onSuccess={handleScanSuccess}
+        />
+      )}
     </div>
   )
 }
