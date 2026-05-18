@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { db } from '@/lib/db'
-import { Plus, Upload } from 'lucide-react'
+import { Plus, Upload, Scale } from 'lucide-react'
 
 export const revalidate = 0
 
@@ -29,34 +29,60 @@ export default async function InBodyPage() {
         <div className="flex gap-2">
           <Link
             href="/inbody/new"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand text-page text-xs font-semibold active:scale-95 transition-transform"
+            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-brand text-page text-xs font-semibold active:scale-95 transition-transform"
           >
             <Plus size={14} />
-            Add
+            Add Reading
           </Link>
           <Link
             href="/inbody/import"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card border border-line text-ink2 text-xs font-semibold active:scale-95 transition-transform"
+            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-card border border-line text-ink2 text-xs font-semibold active:scale-95 transition-transform"
           >
             <Upload size={14} />
-            PDFs
+            Import PDFs
           </Link>
         </div>
       </div>
 
       {readings.length === 0 ? (
-        <div className="mx-4 bg-card rounded-2xl border border-line p-10 text-center">
-          <p className="text-ink3 text-sm">No readings yet.</p>
-          <Link href="/inbody/new" className="mt-3 inline-block text-brand text-sm font-semibold">Add a reading →</Link>
+        <div className="mx-4 bg-card rounded-2xl border border-line p-12 text-center flex flex-col items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-surface flex items-center justify-center">
+            <Scale size={28} className="text-ink3" />
+          </div>
+          <div>
+            <p className="text-ink font-semibold text-base">No InBody readings yet</p>
+            <p className="text-ink3 text-sm mt-1">Track your body composition over time by adding your first scan</p>
+          </div>
+          <Link
+            href="/inbody/new"
+            className="mt-1 flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-brand text-page text-sm font-semibold active:scale-95 transition-transform"
+          >
+            <Plus size={15} />
+            Add First Reading
+          </Link>
         </div>
       ) : (
         <div className="px-4">
           <div className="bg-card rounded-2xl border border-line divide-y divide-line">
-            {readings.map(r => {
+            {readings.map((r, idx) => {
               const date = new Date(r.reading_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+              // Compare to next item in array (which is the previous chronological reading since DESC order)
+              const prev = readings[idx + 1]
+              let trend: string | null = null
+              if (prev?.weight_kg != null && r.weight_kg != null) {
+                const diff = r.weight_kg - prev.weight_kg
+                trend = diff > 0.05 ? '↑' : diff < -0.05 ? '↓' : '→'
+              }
               return (
                 <div key={r.id} className="px-4 py-4">
-                  <p className="text-ink2 text-sm font-medium mb-3">{date}</p>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-ink2 text-sm font-medium">{date}</p>
+                    {trend && (
+                      <span className={`text-sm font-bold ${trend === '↑' ? 'text-warn' : trend === '↓' ? 'text-ok' : 'text-ink3'}`}>
+                        {trend}
+                      </span>
+                    )}
+                  </div>
                   <div className="grid grid-cols-3 gap-2 text-center">
                     <div>
                       <p className="text-ink font-bold text-lg tabular-nums">{r.weight_kg ?? '—'}</p>

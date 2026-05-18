@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { Camera } from 'lucide-react'
 import GalleryGrid from './GalleryGrid'
 
 export const revalidate = 0
@@ -27,9 +28,14 @@ export default async function GalleryPage() {
       </div>
 
       {photos.length === 0 ? (
-        <div className="mx-4 bg-card rounded-2xl border border-line p-12 text-center">
-          <p className="text-ink3 text-sm">No meal photos yet</p>
-          <p className="text-ink3 text-xs mt-1">Log a meal with a photo to see it here</p>
+        <div className="mx-4 bg-card rounded-2xl border border-line p-12 text-center flex flex-col items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-surface flex items-center justify-center">
+            <Camera size={28} className="text-ink3" />
+          </div>
+          <div>
+            <p className="text-ink font-semibold text-base">No meal photos yet</p>
+            <p className="text-ink3 text-sm mt-1">Log a meal with a photo to see it here</p>
+          </div>
         </div>
       ) : (
         <GalleryGrid photos={photos} />

@@ -184,17 +184,18 @@ export default function LogPage() {
           <p className="text-ink3 text-sm">{mode === 'photo' ? 'Photo-based analysis' : 'Text-based analysis'}</p>
         </div>
 
-        <div className="px-4 mb-4">
-          <div className="inline-flex rounded-2xl bg-surface p-1 gap-1">
+        {/* Full-width pill toggle */}
+        <div className="px-4 mb-5">
+          <div className="bg-surface rounded-2xl p-1 flex border border-line">
             <button
               onClick={() => { setMode('photo'); setDescription('') }}
-              className={`px-5 py-2 rounded-xl font-semibold text-sm transition-colors ${mode === 'photo' ? 'bg-brand text-page' : 'bg-surface text-ink3'}`}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold text-center transition-colors ${mode === 'photo' ? 'bg-card text-ink shadow-sm' : 'text-ink3'}`}
             >
               Photo
             </button>
             <button
               onClick={() => { setMode('text'); setPreview(null); setImageBase64(null) }}
-              className={`px-5 py-2 rounded-xl font-semibold text-sm transition-colors ${mode === 'text' ? 'bg-brand text-page' : 'bg-surface text-ink3'}`}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold text-center transition-colors ${mode === 'text' ? 'bg-card text-ink shadow-sm' : 'text-ink3'}`}
             >
               Text
             </button>
@@ -206,7 +207,7 @@ export default function LogPage() {
             <>
               <label
                 htmlFor="meal-photo"
-                className="flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed border-line bg-card cursor-pointer active:scale-95 transition-transform"
+                className="relative flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed border-line bg-card cursor-pointer active:scale-95 transition-transform ring-2 ring-brand/10"
                 style={{ minHeight: '260px' }}
               >
                 <div className="flex flex-col items-center gap-3 py-12 px-6 text-center">
@@ -225,7 +226,7 @@ export default function LogPage() {
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 placeholder="Describe your meal — e.g. 'grilled chicken breast, 1 cup white rice, steamed broccoli'"
-                className="bg-card border border-line rounded-2xl px-4 py-3 text-ink w-full focus:outline-none resize-none"
+                className="bg-surface rounded-xl border border-line px-4 py-3 text-ink w-full focus:outline-none focus:border-linehi resize-none"
                 style={{ minHeight: '160px' }}
               />
               <button
@@ -304,16 +305,17 @@ export default function LogPage() {
           </div>
         )}
 
+        {/* 4-column macro totals with colored pill badges */}
         <div className="px-4 mb-4 grid grid-cols-4 gap-2">
           {[
-            { label: 'Cal', value: Math.round(t.calories), color: 'text-brand' },
-            { label: 'Pro', value: `${Math.round(t.protein)}g`, color: 'text-ok' },
-            { label: 'Carb', value: `${Math.round(t.carbs)}g`, color: 'text-warn' },
-            { label: 'Fat', value: `${Math.round(t.fat)}g`, color: 'text-nourish' },
-          ].map(({ label, value, color }) => (
+            { label: 'Cal', value: Math.round(t.calories), pill: 'bg-blue-500/15 text-blue-400' },
+            { label: 'Pro', value: `${Math.round(t.protein)}g`, pill: 'bg-green-500/15 text-green-400' },
+            { label: 'Carb', value: `${Math.round(t.carbs)}g`, pill: 'bg-amber-500/15 text-amber-400' },
+            { label: 'Fat', value: `${Math.round(t.fat)}g`, pill: 'bg-purple-500/15 text-purple-400' },
+          ].map(({ label, value, pill }) => (
             <div key={label} className="bg-card rounded-2xl border border-line p-3 text-center">
-              <p className={`font-bold text-base tabular-nums ${color}`}>{value}</p>
-              <p className="text-ink3 text-xs mt-0.5">{label}</p>
+              <p className={`font-bold text-base tabular-nums rounded-lg px-1 py-0.5 ${pill}`}>{value}</p>
+              <p className="text-ink3 text-xs mt-1">{label}</p>
             </div>
           ))}
         </div>
@@ -352,7 +354,7 @@ export default function LogPage() {
                       type="number"
                       value={item[field]}
                       onChange={e => updateItem(idx, field, e.target.value)}
-                      className="w-full bg-surface rounded-lg px-2 py-1.5 text-ink text-sm focus:outline-none text-center"
+                      className="w-full bg-surface rounded-lg px-2 py-1.5 text-ink text-sm focus:outline-none text-center border border-line focus:border-linehi"
                       style={{ minHeight: '36px' }}
                     />
                   </div>
@@ -371,7 +373,7 @@ export default function LogPage() {
           <button
             onClick={handleSave}
             disabled={step === 'saving' || items.length === 0}
-            className="w-full py-4 rounded-2xl bg-brand text-page font-bold text-base disabled:opacity-40 active:scale-95 transition-transform"
+            className="w-full py-4 rounded-2xl bg-brand text-page font-bold text-base disabled:opacity-40 active:scale-95 transition-transform shadow-lg"
             style={{ minHeight: '56px' }}
           >
             {step === 'saving' ? 'Saving...' : `Save — ${Math.round(t.calories)} cal`}

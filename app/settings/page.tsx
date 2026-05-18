@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Activity, CheckCircle, AlertCircle, RefreshCw, Unlink, ExternalLink, Zap } from 'lucide-react'
+import { useTheme } from '@/components/ThemeProvider'
 
 type Goals = {
   daily_calories: number
@@ -33,6 +34,64 @@ const GOAL_FIELDS: { key: keyof Goals; label: string; step: number }[] = [
   { key: 'target_lean_mass_kg', label: 'Target Lean Mass (kg)', step: 0.1 },
   { key: 'daily_sleep_hours',   label: 'Target Sleep (hrs)',  step: 0.5 },
 ]
+
+const ACCENT_OPTIONS: { value: string; color: string }[] = [
+  { value: 'blue',   color: '#4a9eff' },
+  { value: 'green',  color: '#10b981' },
+  { value: 'purple', color: '#8b5cf6' },
+  { value: 'amber',  color: '#f59e0b' },
+  { value: 'red',    color: '#ef4444' },
+  { value: 'teal',   color: '#06b6d4' },
+]
+
+function AppearanceSection() {
+  const { mode, setMode, accent, setAccent } = useTheme()
+
+  return (
+    <div>
+      <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-2 px-1">Appearance</p>
+      <div className="bg-card rounded-2xl border border-line p-4 space-y-4">
+        <div>
+          <p className="text-ink3 text-xs font-medium mb-2">Mode</p>
+          <div className="flex gap-2">
+            {(['light', 'dark', 'auto'] as const).map(m => (
+              <button
+                key={m}
+                onClick={() => setMode(m)}
+                className={`flex-1 py-2 rounded-xl text-sm font-semibold capitalize transition-colors ${
+                  mode === m
+                    ? 'bg-brand text-page'
+                    : 'bg-surface text-ink3'
+                }`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p className="text-ink3 text-xs font-medium mb-2">Color</p>
+          <div className="flex gap-3">
+            {ACCENT_OPTIONS.map(({ value, color }) => (
+              <button
+                key={value}
+                onClick={() => setAccent(value as any)}
+                className={`w-[26px] h-[26px] rounded-full transition-all ${
+                  accent === value
+                    ? 'ring-2 ring-white ring-offset-1 ring-offset-card'
+                    : ''
+                }`}
+                style={{ backgroundColor: color }}
+                aria-label={value}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function GoalsSection() {
   const [goals, setGoals] = useState<Goals>(GOAL_DEFAULTS)
@@ -191,6 +250,8 @@ function SettingsContent() {
       </div>
 
       <div className="px-4 space-y-4">
+        <AppearanceSection />
+
         {banner === 'connected' && (
           <div className="flex items-center gap-3 bg-ok/10 border border-ok/30 rounded-2xl p-4">
             <CheckCircle size={18} className="text-ok shrink-0" />

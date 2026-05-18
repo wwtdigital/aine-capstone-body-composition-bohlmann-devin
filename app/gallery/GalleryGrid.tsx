@@ -36,16 +36,16 @@ export default function GalleryGrid({ photos }: { photos: MealPhoto[] }) {
 
   return (
     <>
-      <div className="px-4 grid grid-cols-2 gap-2">
+      <div className="px-4 grid grid-cols-3 gap-1.5">
         {photos.map((p, i) => (
           <button
             key={p.id}
             onClick={() => setSelected(i)}
-            className="relative aspect-square rounded-2xl overflow-hidden bg-surface active:scale-95 transition-transform"
+            className="relative aspect-square rounded-xl overflow-hidden bg-surface active:scale-95 transition-transform"
           >
             <img src={p.photo_url} alt="" className="w-full h-full object-cover" />
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-              <p className="text-white text-xs font-semibold tabular-nums">{Math.round(p.total_calories)} cal</p>
+            <div className="absolute bottom-1 right-1 bg-black/60 rounded-md px-1.5 py-0.5 backdrop-blur-sm">
+              <p className="text-white text-xs font-semibold tabular-nums">{Math.round(p.total_calories)}</p>
             </div>
           </button>
         ))}
@@ -65,8 +65,11 @@ export default function GalleryGrid({ photos }: { photos: MealPhoto[] }) {
                 {' · '}{Math.round(photo.total_calories)} cal
               </p>
             </div>
-            <button onClick={() => setSelected(null)} className="text-ink3 p-2">
-              <X size={22} />
+            <button
+              onClick={() => setSelected(null)}
+              className="w-9 h-9 rounded-full bg-black/60 flex items-center justify-center text-white"
+            >
+              <X size={18} />
             </button>
           </div>
 

@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from 'next/font/google'
 import BottomNav from '@/components/BottomNav'
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration'
 import PwaInstallPrompt from '@/components/PwaInstallPrompt'
+import ThemeProvider from '@/components/ThemeProvider'
 import './globals.css'
 
 const inter = Inter({
@@ -42,12 +43,26 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${mono.variable} h-full`}>
+    <html lang="en" className={`${inter.variable} ${mono.variable} h-full`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `
+  try {
+    var t = localStorage.getItem('bcc-theme') || 'dark';
+    var a = localStorage.getItem('bcc-accent') || 'blue';
+    var d = document.documentElement;
+    if (t === 'auto') t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    d.setAttribute('data-theme', t);
+    d.setAttribute('data-accent', a);
+  } catch(e) {}
+` }} />
+      </head>
       <body className="min-h-full bg-page text-ink antialiased">
-        <ServiceWorkerRegistration />
-        <PwaInstallPrompt />
-        {children}
-        <BottomNav />
+        <ThemeProvider>
+          <ServiceWorkerRegistration />
+          <PwaInstallPrompt />
+          {children}
+          <BottomNav />
+        </ThemeProvider>
       </body>
     </html>
   )

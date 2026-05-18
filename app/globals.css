@@ -43,9 +43,33 @@
   color-scheme: dark;
 }
 
+/* Light mode overrides */
+[data-theme="light"] {
+  --color-page:    #f8fafc;
+  --color-raised:  #f1f5f9;
+  --color-card:    #ffffff;
+  --color-surface: #f1f5f9;
+  --color-pressed: #e2e8f0;
+  --color-line:    #e2e8f0;
+  --color-linehi:  #cbd5e1;
+  --color-ink:     #0f172a;
+  --color-ink2:    #334155;
+  --color-ink3:    #64748b;
+  --color-ink4:    #94a3b8;
+  color-scheme: light;
+}
+
+/* Accent color overrides — brand only */
+[data-accent="green"]  { --color-brand: #10b981; --color-brandhi: #34d399; --color-brandlo: #059669; }
+[data-accent="purple"] { --color-brand: #8b5cf6; --color-brandhi: #a78bfa; --color-brandlo: #7c3aed; }
+[data-accent="amber"]  { --color-brand: #f59e0b; --color-brandhi: #fbbf24; --color-brandlo: #d97706; }
+[data-accent="red"]    { --color-brand: #ef4444; --color-brandhi: #f87171; --color-brandlo: #dc2626; }
+[data-accent="teal"]   { --color-brand: #06b6d4; --color-brandhi: #22d3ee; --color-brandlo: #0891b2; }
+/* blue is the default in @theme, no override needed */
+
 body {
-  background: #0a0d14;
-  color: #f1f5f9;
+  background: var(--color-page);
+  color: var(--color-ink);
   font-family: var(--font-inter), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   font-feature-settings: 'cv11' 1;
