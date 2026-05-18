@@ -5,6 +5,8 @@ import MacroRing from '@/components/MacroRing'
 import MealList from '@/components/MealSheet'
 import DailyInsight from '@/components/DailyInsight'
 import { Dumbbell } from 'lucide-react'
+import FramedCard from '@/components/FramedCard'
+import ISymbol from '@/components/ISymbol'
 
 export const revalidate = 0
 
@@ -90,15 +92,18 @@ export default async function Today() {
       {/* Section 1: Header */}
       <div className="flex items-center justify-between px-4 pt-12 pb-2">
         <div>
-          <h1 className="text-2xl font-bold text-ink tracking-tight">Today</h1>
-          <p className="text-ink3 text-sm">{today}</p>
+          <h1 className="text-3xl font-semibold text-ink tracking-tight">Today</h1>
+          <p className="text-ink4 text-sm mt-0.5">{today}</p>
         </div>
       </div>
 
       {/* Section 2: Recovery */}
-      <div className="mx-4 mt-4 bg-card rounded-2xl border border-line p-4">
+      <FramedCard className="mx-4 mt-6 bg-card rounded-2xl border border-line p-4">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-semibold text-ink3 uppercase tracking-wider">Recovery</span>
+          <div className="flex items-center gap-2">
+            <ISymbol size={14} className="text-ink3 opacity-60" />
+            <span className="eyebrow">Recovery</span>
+          </div>
           {whoop && (
             <span className="text-xs text-ink3">{whoop.date === todayStr ? 'Today' : 'Yesterday'}</span>
           )}
@@ -107,9 +112,9 @@ export default async function Today() {
         {!whoop && (
           <Link
             href="/settings"
-            className="flex items-center gap-2 bg-warn/10 border border-warn/30 rounded-xl px-3 py-2 mb-3"
+            className="inline-flex items-center gap-2 bg-brand text-page text-xs font-medium px-4 py-2 rounded-full mb-3"
           >
-            <span className="text-warn text-xs font-medium">Connect Whoop to see your real recovery data →</span>
+            Connect Whoop ›
           </Link>
         )}
 
@@ -168,14 +173,17 @@ export default async function Today() {
 
         {/* Sleep stages */}
         <div className="mt-3 pt-3 border-t border-line">
-          <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-2">Sleep Stages</p>
+          <p className="eyebrow mb-2">Sleep Stages</p>
           <SleepStagesBar minutes={whoop?.sleep_minutes ?? (whoop ? null : 432)} muted={!whoop} />
         </div>
-      </div>
+      </FramedCard>
 
       {/* Section 3: Nutrition */}
-      <div className="mx-4 mt-4 bg-card rounded-2xl border border-line p-5">
-        <span className="text-xs font-semibold text-ink3 uppercase tracking-wider">Nutrition</span>
+      <FramedCard className="mx-4 mt-6 bg-card rounded-2xl border border-line p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <ISymbol size={14} className="text-ink3 opacity-60" />
+          <span className="eyebrow">Nutrition</span>
+        </div>
         <div className="flex items-center justify-around mt-4 mb-4">
           <MacroRing
             value={Math.round(n.cal)}
@@ -206,12 +214,15 @@ export default async function Today() {
             </div>
           ))}
         </div>
-      </div>
+      </FramedCard>
 
       {/* 7-day adherence strip */}
-      <div className="mx-4 mt-3 bg-card rounded-2xl border border-line p-4">
+      <FramedCard className="mx-4 mt-6 bg-card rounded-2xl border border-line p-4">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-semibold text-ink3 uppercase tracking-wider">7-Day Adherence</span>
+          <div className="flex items-center gap-2">
+            <ISymbol size={14} className="text-ink3 opacity-60" />
+            <span className="eyebrow">7-Day Adherence</span>
+          </div>
           {streak > 0 && (
             <span className="text-xs font-bold text-ok">🔥 {streak}-day streak</span>
           )}
@@ -229,13 +240,16 @@ export default async function Today() {
           <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-warn" /><span className="text-ink3 text-xs">50–89%</span></div>
           <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-surface" /><span className="text-ink3 text-xs">&lt;50%</span></div>
         </div>
-      </div>
+      </FramedCard>
 
       {/* Section 4: Body Composition */}
       {latest ? (
-        <div className="mx-4 mt-4 bg-card rounded-2xl border border-line p-4">
+        <FramedCard className="mx-4 mt-6 bg-card rounded-2xl border border-line p-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-ink3 uppercase tracking-wider">Body Comp</span>
+            <div className="flex items-center gap-2">
+              <ISymbol size={14} className="text-ink3 opacity-60" />
+              <span className="eyebrow">Body Comp</span>
+            </div>
             <span className="text-xs text-ink3">
               {new Date(latest.reading_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
@@ -262,17 +276,20 @@ export default async function Today() {
               <p className="text-ink3 text-xs mt-0.5">kg lean</p>
             </div>
           </div>
-        </div>
+        </FramedCard>
       ) : (
-        <div className="mx-4 mt-4 bg-card rounded-2xl border border-line p-4">
+        <FramedCard className="mx-4 mt-6 bg-card rounded-2xl border border-line p-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-ink3 uppercase tracking-wider">Body Comp</span>
+            <div className="flex items-center gap-2">
+              <ISymbol size={14} className="text-ink3 opacity-60" />
+              <span className="eyebrow">Body Comp</span>
+            </div>
           </div>
           <Link
             href="/inbody/new"
-            className="flex items-center gap-2 bg-brand/10 border border-brand/30 rounded-xl px-3 py-2 mb-3"
+            className="inline-flex items-center gap-2 bg-brand text-page text-xs font-medium px-4 py-2 rounded-full mb-3"
           >
-            <span className="text-brand text-xs font-medium">Add your InBody readings to track real progress →</span>
+            Add InBody readings ›
           </Link>
           <div className="grid grid-cols-3 gap-3">
             <div className="text-center">
@@ -288,7 +305,7 @@ export default async function Today() {
               <p className="text-ink3 text-xs mt-0.5">kg lean</p>
             </div>
           </div>
-        </div>
+        </FramedCard>
       )}
 
       {/* AI Daily Insight */}
@@ -298,13 +315,16 @@ export default async function Today() {
       <HybridAthleteTip dayOfWeek={new Date().getDay()} />
 
       {/* Section 6: Meals Today */}
-      <div className="mx-4 mt-4">
+      <div className="mx-4 mt-6">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-semibold text-ink3 uppercase tracking-wider">Meals</span>
+          <div className="flex items-center gap-2">
+            <ISymbol size={14} className="text-ink3 opacity-60" />
+            <span className="eyebrow">Meals</span>
+          </div>
           <div className="flex items-center gap-3">
             <Link href="/gallery" className="text-xs font-semibold text-ink3">Gallery</Link>
-            <Link href="/log/workout" className="text-xs font-semibold text-ink3">+ Log workout</Link>
-            <Link href="/log" className="text-xs font-semibold text-brand">+ Log meal</Link>
+            <Link href="/log/workout" className="text-xs font-semibold text-ink3">Log workout ›</Link>
+            <Link href="/log" className="text-xs font-semibold text-brand">Log meal ›</Link>
           </div>
         </div>
 
@@ -312,7 +332,7 @@ export default async function Today() {
           <div className="bg-card rounded-2xl border border-line p-6 text-center">
             <p className="text-ink3 text-sm">Nothing logged yet today</p>
             <Link href="/log" className="mt-3 inline-flex items-center gap-1.5 text-brand text-sm font-semibold">
-              Take a photo →
+              Take a photo ›
             </Link>
           </div>
         ) : (

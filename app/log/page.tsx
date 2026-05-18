@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { RotateCcw } from 'lucide-react'
+import FramedCard from '@/components/FramedCard'
 
 type MealItem = {
   name: string
@@ -240,9 +241,9 @@ export default function LogPage() {
               <button
                 onClick={handleTextAnalyze}
                 disabled={!description.trim()}
-                className="bg-brand text-page font-semibold rounded-2xl py-4 w-full disabled:opacity-40 active:scale-95 transition-transform"
+                className="bg-brand text-page font-semibold rounded-full py-4 w-full disabled:opacity-40 active:scale-95 transition-transform"
               >
-                Analyze
+                Analyze ›
               </button>
             </div>
           )}
@@ -330,7 +331,7 @@ export default function LogPage() {
 
         <div className="px-4 space-y-3">
           {items.map((item, idx) => (
-            <div key={idx} className="bg-card rounded-2xl border border-line p-4 space-y-3">
+            <FramedCard key={idx} className="bg-card rounded-2xl border border-line p-4 space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <input
                   type="text"
@@ -371,7 +372,7 @@ export default function LogPage() {
               {item.confidence === 'low' && (
                 <p className="text-warn text-xs">Low confidence — verify this item</p>
               )}
-            </div>
+            </FramedCard>
           ))}
         </div>
 
@@ -381,10 +382,10 @@ export default function LogPage() {
           <button
             onClick={handleSave}
             disabled={step === 'saving' || items.length === 0}
-            className="w-full py-4 rounded-2xl bg-brand text-page font-bold text-base disabled:opacity-40 active:scale-95 transition-transform shadow-lg"
+            className="w-full py-4 rounded-full bg-brand text-page font-bold text-base disabled:opacity-40 active:scale-95 transition-transform shadow-lg"
             style={{ minHeight: '56px' }}
           >
-            {step === 'saving' ? 'Saving...' : `Save — ${Math.round(t.calories)} cal`}
+            {step === 'saving' ? 'Saving...' : `Save — ${Math.round(t.calories)} cal ›`}
           </button>
         </div>
       </div>

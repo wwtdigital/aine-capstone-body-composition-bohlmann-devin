@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Sparkles, RefreshCw, AlertCircle, TrendingDown, ChevronDown, ChevronUp, Apple, Scale } from 'lucide-react'
+import FramedCard from '@/components/FramedCard'
+import ISymbol from '@/components/ISymbol'
 
 type Gap = { area: string; severity: 'high' | 'medium' | 'low'; detail: string }
 type Rec = { action: string; detail: string; priority: 'high' | 'medium' | 'low' }
@@ -118,7 +120,7 @@ export default function GapPage() {
       {/* Header */}
       <div className="flex items-start justify-between px-4 pt-12 pb-4">
         <div>
-          <h1 className="text-2xl font-bold text-ink tracking-tight">AI Analysis</h1>
+          <h1 className="text-3xl font-semibold text-ink tracking-tight">AI Analysis</h1>
           <p className="text-ink3 text-sm">AI coaching · powered by Claude</p>
         </div>
         {analysis && !loading && (
@@ -195,10 +197,10 @@ export default function GapPage() {
 
             <button
               onClick={runAnalysis}
-              className="w-full py-4 rounded-2xl bg-brand text-page font-bold text-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+              className="w-full py-4 rounded-full bg-brand text-page font-bold text-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
             >
               <Sparkles size={20} />
-              Run Analysis
+              Run Analysis ›
             </button>
 
             {context && (
@@ -212,22 +214,22 @@ export default function GapPage() {
         {/* Loading skeleton */}
         {loading && (
           <div className="space-y-3">
-            <div className="bg-card rounded-2xl border border-line p-5 space-y-3">
+            <FramedCard className="bg-card rounded-2xl border border-line p-5 space-y-3">
               <div className="h-3 bg-surface rounded-full w-1/4 animate-pulse" />
               <div className="h-5 bg-surface rounded-full w-3/4 animate-pulse" />
               <div className="h-4 bg-surface rounded-full w-1/2 animate-pulse" />
-            </div>
-            <div className="bg-card rounded-2xl border border-line p-4 space-y-2">
+            </FramedCard>
+            <FramedCard className="bg-card rounded-2xl border border-line p-4 space-y-2">
               <div className="h-3 bg-surface rounded-full w-1/3 animate-pulse" />
               <div className="h-12 bg-surface rounded-xl animate-pulse" />
               <div className="h-12 bg-surface rounded-xl animate-pulse" />
-            </div>
-            <div className="bg-card rounded-2xl border border-line p-4 space-y-2">
+            </FramedCard>
+            <FramedCard className="bg-card rounded-2xl border border-line p-4 space-y-2">
               <div className="h-3 bg-surface rounded-full w-1/3 animate-pulse" />
               <div className="h-14 bg-surface rounded-xl animate-pulse" />
               <div className="h-14 bg-surface rounded-xl animate-pulse" />
               <div className="h-14 bg-surface rounded-xl animate-pulse" />
-            </div>
+            </FramedCard>
           </div>
         )}
 
@@ -235,30 +237,33 @@ export default function GapPage() {
         {analysis && !loading && (
           <>
             {/* Headline card */}
-            <div className="bg-gradient-to-br from-brand/15 to-brand/5 border border-brand/30 rounded-2xl p-5">
+            <FramedCard className="bg-gradient-to-br from-brand/15 to-brand/5 border border-brand/30 rounded-2xl p-5">
               <p className="text-brand text-xs font-semibold uppercase tracking-wider mb-2">Summary · {modeName}</p>
               <p className="text-ink font-semibold text-lg leading-snug">{analysis.headline}</p>
               <div className="flex items-center gap-1.5 mt-3">
                 <TrendingDown size={14} className="text-ink3" />
                 <p className="text-ink3 text-sm">{analysis.timeline}</p>
               </div>
-            </div>
+            </FramedCard>
 
             {/* Gaps */}
             {analysis.gaps.length > 0 && (
               <div>
-                <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-2 px-1">Gaps Identified</p>
+                <div className="flex items-center gap-2 mb-2 px-1">
+                  <ISymbol size={14} className="text-ink3 opacity-60" />
+                  <span className="eyebrow">Gaps Identified</span>
+                </div>
                 <div className="space-y-2">
                   {analysis.gaps.map((gap, i) => {
                     const cfg = severityConfig[gap.severity]
                     return (
-                      <div key={i} className={`rounded-2xl border-l-4 border border-line bg-card p-4 ${cfg.leftBorder}`}>
+                      <FramedCard key={i} className={`rounded-2xl border-l-4 border border-line bg-card p-4 ${cfg.leftBorder}`}>
                         <div className="flex items-center justify-between mb-1.5">
                           <p className={`font-semibold text-sm ${cfg.text}`}>{gap.area}</p>
                           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cfg.badge}`}>{gap.severity}</span>
                         </div>
                         <p className="text-ink3 text-sm">{gap.detail}</p>
-                      </div>
+                      </FramedCard>
                     )
                   })}
                 </div>
@@ -268,7 +273,10 @@ export default function GapPage() {
             {/* Action plan with checkboxes */}
             {analysis.recommendations.length > 0 && (
               <div>
-                <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-2 px-1">Action Plan</p>
+                <div className="flex items-center gap-2 mb-2 px-1">
+                  <ISymbol size={14} className="text-ink3 opacity-60" />
+                  <span className="eyebrow">Action Plan</span>
+                </div>
                 <div className="space-y-2">
                   {analysis.recommendations.map((rec, i) => {
                     const cfg = priorityConfig[rec.priority]
@@ -308,15 +316,18 @@ export default function GapPage() {
             )}
 
             {/* Coach's note */}
-            <div className="bg-surface rounded-2xl border border-line p-5">
+            <FramedCard className="bg-surface rounded-2xl border border-line p-5">
               <div className="flex items-center gap-2 mb-3">
                 <svg width="20" height="16" viewBox="0 0 20 16" fill="none" className="text-brand shrink-0">
                   <path d="M0 16V9.6C0 7.04 0.586667 4.82667 1.76 2.96C2.96 1.09333 4.69333 0 7 0L7.6 1.2C6.13333 1.73333 5.01333 2.68 4.24 4.04C3.49333 5.4 3.12 6.77333 3.12 8.16H6.4V16H0ZM12.4 16V9.6C12.4 7.04 12.9867 4.82667 14.16 2.96C15.36 1.09333 17.0933 0 19.4 0L20 1.2C18.5333 1.73333 17.4133 2.68 16.64 4.04C15.8933 5.4 15.52 6.77333 15.52 8.16H18.8V16H12.4Z" fill="currentColor" opacity="0.3" />
                 </svg>
-                <p className="text-ink3 text-xs font-semibold uppercase tracking-wider">Coach's Note</p>
+                <div className="flex items-center gap-2">
+                  <ISymbol size={14} className="text-ink3 opacity-60" />
+                  <span className="eyebrow">Coach's Note</span>
+                </div>
               </div>
               <p className="text-ink2 text-sm leading-relaxed">{analysis.coaching_note}</p>
-            </div>
+            </FramedCard>
 
             {context && (
               <p className="text-ink3 text-xs text-center pb-2">
@@ -328,12 +339,15 @@ export default function GapPage() {
             {/* Previous analyses */}
             {history.length > 0 && (
               <div>
-                <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-2 px-1">Previous Analyses</p>
+                <div className="flex items-center gap-2 mb-2 px-1">
+                  <ISymbol size={14} className="text-ink3 opacity-60" />
+                  <span className="eyebrow">Previous Analyses</span>
+                </div>
                 <div className="space-y-2">
                   {history.map((entry, i) => {
                     const expanded = expandedHistory.has(i)
                     return (
-                      <div key={i} className="bg-card rounded-2xl border border-line overflow-hidden">
+                      <FramedCard key={i} className="bg-card rounded-2xl border border-line overflow-hidden">
                         <button
                           onClick={() => toggleHistoryExpand(i)}
                           className="w-full text-left p-4 flex items-start justify-between gap-3"
@@ -361,7 +375,7 @@ export default function GapPage() {
                             <p className="text-ink3 text-xs italic leading-relaxed">{entry.analysis.coaching_note}</p>
                           </div>
                         )}
-                      </div>
+                      </FramedCard>
                     )
                   })}
                 </div>

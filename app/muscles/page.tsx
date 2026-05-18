@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { Camera, X } from 'lucide-react'
+import FramedCard from '@/components/FramedCard'
+import ISymbol from '@/components/ISymbol'
 
 type Volume = 'low' | 'medium' | 'high'
 type Region = 'front' | 'back'
@@ -488,16 +490,19 @@ export default function MusclesPage() {
       {/* Header */}
       <div className="px-4 pt-12 pb-4 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-ink tracking-tight">Muscles</h1>
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <ISymbol size={14} className="text-ink3 opacity-60" />
+            <h1 className="text-2xl font-bold text-ink tracking-tight">Muscles</h1>
+          </div>
           <p className="text-ink3 text-sm mt-0.5">Hybrid Athlete Tracker</p>
         </div>
         <button
           onClick={() => setShowScan(true)}
-          className="mt-1 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface border border-line text-ink3 hover:text-ink text-xs font-medium transition-colors"
+          className="mt-1 flex items-center gap-1.5 px-4 py-2 rounded-full bg-surface border border-line text-ink3 hover:text-ink text-xs font-semibold transition-colors"
           aria-label="Scan physique"
         >
           <Camera size={14} />
-          Scan Physique
+          Scan Physique ›
         </button>
       </div>
 
@@ -565,7 +570,7 @@ export default function MusclesPage() {
       <div className="px-4 flex gap-4 items-start">
         {/* Left: SVG diagram */}
         <div className="w-[44%] shrink-0">
-          <div className="bg-card rounded-2xl border border-line p-2 overflow-hidden">
+          <FramedCard className="bg-card rounded-2xl border border-line p-2 overflow-hidden">
             <BodyDiagram
               region={region}
               muscles={visibleMuscles}
@@ -573,7 +578,7 @@ export default function MusclesPage() {
               selectedId={selectedId}
               onSelect={handleDiagramSelect}
             />
-          </div>
+          </FramedCard>
 
           {/* Legend */}
           <div className="mt-3 space-y-1.5">
@@ -613,7 +618,7 @@ export default function MusclesPage() {
 
         {/* Right: muscle list */}
         <div className="flex-1 min-w-0">
-          <div className="bg-card rounded-2xl border border-line overflow-hidden">
+          <FramedCard className="bg-card rounded-2xl border border-line overflow-hidden">
             {visibleMuscles.map(m => (
               <MuscleListItem
                 key={m.id}
@@ -623,7 +628,7 @@ export default function MusclesPage() {
                 onSelect={() => handleSelectMuscle(m.id)}
               />
             ))}
-          </div>
+          </FramedCard>
         </div>
       </div>
 

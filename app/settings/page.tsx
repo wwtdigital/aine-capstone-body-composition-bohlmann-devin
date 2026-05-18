@@ -4,6 +4,8 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Activity, CheckCircle, AlertCircle, RefreshCw, Unlink, ExternalLink, Zap } from 'lucide-react'
 import { useTheme } from '@/components/ThemeProvider'
+import FramedCard from '@/components/FramedCard'
+import ISymbol from '@/components/ISymbol'
 
 type Goals = {
   daily_calories: number
@@ -49,8 +51,11 @@ function AppearanceSection() {
 
   return (
     <div>
-      <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-2 px-1">Appearance</p>
-      <div className="bg-card rounded-2xl border border-line p-4 space-y-4">
+      <div className="flex items-center gap-2 mb-2 px-1">
+        <ISymbol size={14} className="text-ink3 opacity-60" />
+        <span className="eyebrow">Appearance</span>
+      </div>
+      <FramedCard className="bg-card rounded-2xl border border-line p-4 space-y-4">
         <div>
           <p className="text-ink3 text-xs font-medium mb-2">Mode</p>
           <div className="flex gap-2">
@@ -88,7 +93,7 @@ function AppearanceSection() {
             ))}
           </div>
         </div>
-      </div>
+      </FramedCard>
     </div>
   )
 }
@@ -122,8 +127,11 @@ function GoalsSection() {
 
   return (
     <div>
-      <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-2 px-1">Goals</p>
-      <div className="bg-card rounded-2xl border border-line p-4 space-y-3">
+      <div className="flex items-center gap-2 mb-2 px-1">
+        <ISymbol size={14} className="text-ink3 opacity-60" />
+        <span className="eyebrow">Goals</span>
+      </div>
+      <FramedCard className="bg-card rounded-2xl border border-line p-4 space-y-3">
         {loading ? (
           <div className="h-48 bg-surface rounded-xl animate-pulse" />
         ) : (
@@ -143,9 +151,9 @@ function GoalsSection() {
             <button
               onClick={handleSave}
               disabled={saveState === 'saving'}
-              className="w-full bg-brand text-page font-semibold rounded-xl py-3 mt-1 disabled:opacity-50 active:scale-95 transition-transform"
+              className="w-full bg-brand text-page font-semibold rounded-full py-3 mt-1 disabled:opacity-50 active:scale-95 transition-transform"
             >
-              {saveState === 'saving' ? 'Saving…' : 'Save Goals'}
+              {saveState === 'saving' ? 'Saving… ›' : 'Save Goals ›'}
             </button>
             {saveState === 'saved' && (
               <p className="text-ok text-xs text-center font-medium">Saved</p>
@@ -155,7 +163,7 @@ function GoalsSection() {
             )}
           </>
         )}
-      </div>
+      </FramedCard>
     </div>
   )
 }
@@ -245,7 +253,7 @@ function SettingsContent() {
   return (
     <div className="min-h-screen bg-page pb-24">
       <div className="px-4 pt-12 pb-6">
-        <h1 className="text-2xl font-bold text-ink tracking-tight">Settings</h1>
+        <h1 className="text-3xl font-semibold text-ink tracking-tight">Settings</h1>
         <p className="text-ink3 text-sm">Integrations & preferences</p>
       </div>
 
@@ -266,7 +274,7 @@ function SettingsContent() {
         )}
 
         {/* Whoop card */}
-        <div className="bg-card rounded-2xl border border-line">
+        <FramedCard className="bg-card rounded-2xl border border-line">
           <div className="p-4 border-b border-line">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-bad/10 flex items-center justify-center">
@@ -293,10 +301,10 @@ function SettingsContent() {
             {connected === false && (
               <a
                 href="/api/whoop/auth"
-                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-brand text-page font-semibold text-sm active:scale-95 transition-transform"
+                className="flex items-center justify-center gap-2 w-full py-3 rounded-full bg-brand text-page font-semibold text-sm active:scale-95 transition-transform"
               >
                 <ExternalLink size={15} />
-                Connect Whoop
+                Connect Whoop ›
               </a>
             )}
 
@@ -305,12 +313,12 @@ function SettingsContent() {
                 <button
                   onClick={handleSync}
                   disabled={syncState === 'syncing'}
-                  className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-brand text-page font-semibold text-sm disabled:opacity-50 active:scale-95 transition-transform"
+                  className="flex items-center justify-center gap-2 w-full py-3 rounded-full bg-brand text-page font-semibold text-sm disabled:opacity-50 active:scale-95 transition-transform"
                 >
                   {syncState === 'syncing' ? (
-                    <><RefreshCw size={15} className="animate-spin" />Syncing...</>
+                    <><RefreshCw size={15} className="animate-spin" />Syncing... ›</>
                   ) : (
-                    <><Zap size={15} />Sync Last 30 Days</>
+                    <><Zap size={15} />Sync Last 30 Days ›</>
                   )}
                 </button>
 
@@ -333,13 +341,16 @@ function SettingsContent() {
               </div>
             )}
           </div>
-        </div>
+        </FramedCard>
 
         {/* Recent Whoop data */}
         {whoopData.length > 0 && (
           <div>
-            <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-2 px-1">Recent Whoop Data</p>
-            <div className="bg-card rounded-2xl border border-line divide-y divide-line">
+            <div className="flex items-center gap-2 mb-2 px-1">
+              <ISymbol size={14} className="text-ink3 opacity-60" />
+              <span className="eyebrow">Recent Whoop Data</span>
+            </div>
+            <FramedCard className="bg-card rounded-2xl border border-line divide-y divide-line">
               {whoopData.slice(0, 7).map(day => (
                 <div key={day.date} className="flex items-center px-4 py-3 gap-3">
                   <p className="text-ink3 text-xs w-16 shrink-0">
@@ -373,7 +384,7 @@ function SettingsContent() {
                   </div>
                 </div>
               ))}
-            </div>
+            </FramedCard>
           </div>
         )}
 

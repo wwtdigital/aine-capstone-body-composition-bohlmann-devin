@@ -7,6 +7,8 @@ import BodyCompCharts from '../month/BodyCompCharts'
 import HrvChart from './HrvChart'
 import MacroRadial from '@/components/MacroRadial'
 import BodyBattery from '@/components/BodyBattery'
+import FramedCard from '@/components/FramedCard'
+import ISymbol from '@/components/ISymbol'
 
 export const revalidate = 0
 
@@ -29,7 +31,7 @@ function GoalCard({
     (delta > 0) === positiveIsGood ? 'text-ok' : 'text-warn'
 
   return (
-    <div className="bg-card rounded-2xl border border-line p-4">
+    <FramedCard className="bg-card rounded-2xl border border-line p-4">
       <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-2">{label}</p>
       <p className="text-ink font-bold text-2xl tabular-nums">
         {value}<span className="text-ink3 text-base font-normal">{unit}</span>
@@ -40,7 +42,7 @@ function GoalCard({
           {delta > 0 ? '+' : ''}{delta.toFixed(1)}{unit}
         </p>
       )}
-    </div>
+    </FramedCard>
   )
 }
 
@@ -151,7 +153,7 @@ export default async function ProgressPage() {
   return (
     <div className="min-h-screen bg-page pb-24">
       <div className="px-4 pt-12 pb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink tracking-tight">Progress</h1>
+        <h1 className="text-3xl font-semibold text-ink tracking-tight">Progress</h1>
         <Link href="/muscles" className="text-brand text-sm font-semibold">
           Muscle Map →
         </Link>
@@ -177,13 +179,14 @@ export default async function ProgressPage() {
         {/* ── Nutrition (7 Days) ── */}
         <section id="nutrition" className="space-y-4">
           <div className="flex items-center gap-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-ink3 shrink-0">Nutrition (7 Days)</h2>
+            <ISymbol size={14} className="text-ink3 opacity-60 shrink-0" />
+            <span className="eyebrow shrink-0">Nutrition (7 Days)</span>
             <div className="flex-1 h-px bg-line" />
             {streak > 0 && <span className="text-xs font-bold text-ok shrink-0">🔥 {streak}-day streak</span>}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-card rounded-2xl border border-line p-4">
+            <FramedCard className="bg-card rounded-2xl border border-line p-4">
               <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-2">Avg Calories</p>
               <p className="text-ink font-bold text-3xl tabular-nums">{avgCal > 0 ? avgCal.toLocaleString() : '—'}</p>
               <p className="text-ink3 text-xs mt-1">goal: {GOALS.daily_calories.toLocaleString()}</p>
@@ -192,8 +195,8 @@ export default async function ProgressPage() {
                   {Math.round((avgCal / GOALS.daily_calories) * 100)}% of goal
                 </p>
               )}
-            </div>
-            <div className="bg-card rounded-2xl border border-line p-4">
+            </FramedCard>
+            <FramedCard className="bg-card rounded-2xl border border-line p-4">
               <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-2">Avg Protein</p>
               <p className="text-ink font-bold text-3xl tabular-nums">{avgProt > 0 ? `${avgProt}g` : '—'}</p>
               <p className="text-ink3 text-xs mt-1">goal: {GOALS.daily_protein_g}g</p>
@@ -202,10 +205,10 @@ export default async function ProgressPage() {
                   {Math.round((avgProt / GOALS.daily_protein_g) * 100)}% of goal
                 </p>
               )}
-            </div>
+            </FramedCard>
           </div>
 
-          <div className="bg-card rounded-2xl border border-line p-4">
+          <FramedCard className="bg-card rounded-2xl border border-line p-4">
             <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-3">Today&apos;s Macro Split</p>
             <MacroRadial
               calories={Math.round(todayN.cal)}
@@ -215,29 +218,29 @@ export default async function ProgressPage() {
               calGoal={GOALS.daily_calories}
               proteinGoal={GOALS.daily_protein_g}
             />
-          </div>
+          </FramedCard>
 
-          <div className="bg-card rounded-2xl border border-line p-4">
+          <FramedCard className="bg-card rounded-2xl border border-line p-4">
             <BodyBattery />
-          </div>
+          </FramedCard>
 
           {daysWithData.length === 0 ? (
             <Link href="/log" className="block">
-              <div className="bg-card rounded-2xl border border-line p-8 text-center flex flex-col items-center gap-3">
+              <FramedCard className="bg-card rounded-2xl border border-line p-8 text-center flex flex-col items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-surface flex items-center justify-center">
                   <Camera size={22} className="text-ink3" />
                 </div>
                 <p className="text-ink2 text-sm font-semibold">Log your first meal to see weekly trends →</p>
-              </div>
+              </FramedCard>
             </Link>
           ) : (
-            <div className="bg-card rounded-2xl border border-line p-4">
+            <FramedCard className="bg-card rounded-2xl border border-line p-4">
               <WeekCharts days={days} calorieGoal={GOALS.daily_calories} proteinGoal={GOALS.daily_protein_g} />
-            </div>
+            </FramedCard>
           )}
 
           {daysWithData.length > 0 && (
-            <div className="bg-card rounded-2xl border border-line divide-y divide-line">
+            <FramedCard className="bg-card rounded-2xl border border-line divide-y divide-line">
               {[...days].reverse().map((d, i) => (
                 <div key={i} className="flex items-center justify-between px-4 py-3">
                   <span className="text-ink2 text-sm w-10">{d.day}</span>
@@ -261,14 +264,15 @@ export default async function ProgressPage() {
                   )}
                 </div>
               ))}
-            </div>
+            </FramedCard>
           )}
         </section>
 
         {/* ── Body Composition ── */}
         <section id="body" className="space-y-4">
           <div className="flex items-center gap-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-ink3 shrink-0">Body Composition</h2>
+            <ISymbol size={14} className="text-ink3 opacity-60 shrink-0" />
+            <span className="eyebrow shrink-0">Body Composition</span>
             <div className="flex-1 h-px bg-line" />
             <div className="flex gap-2 shrink-0">
               <Link
@@ -319,7 +323,7 @@ export default async function ProgressPage() {
                 }
 
                 return (
-                  <div className="bg-gradient-to-br from-brand/8 to-ok/5 rounded-2xl border border-brand/20 p-4">
+                  <FramedCard className="bg-gradient-to-br from-brand/8 to-ok/5 rounded-2xl border border-brand/20 p-4">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-ink2 text-xs font-semibold uppercase tracking-wider">Progress Since First Scan</p>
                       <p className="text-ink3 text-xs">{daysDiff}d</p>
@@ -329,7 +333,7 @@ export default async function ProgressPage() {
                       <DeltaChip value={bDelta} unit="%" label="Body Fat" lowerIsBetter={true} />
                       <DeltaChip value={lDelta} unit="kg" label="Lean Mass" lowerIsBetter={false} />
                     </div>
-                  </div>
+                  </FramedCard>
                 )
               })()}
 
@@ -353,19 +357,19 @@ export default async function ProgressPage() {
               </div>
 
               {readings.length >= 2 && (
-                <div className="bg-card rounded-2xl border border-line p-4">
+                <FramedCard className="bg-card rounded-2xl border border-line p-4">
                   <BodyCompCharts data={chartData} weightGoal={GOALS.weight_kg} bfGoal={GOALS.body_fat_pct} />
-                </div>
+                </FramedCard>
               )}
 
-              <div className="bg-card rounded-2xl border border-line p-4">
+              <FramedCard className="bg-card rounded-2xl border border-line p-4">
                 {isHrvSynthetic && (
                   <p className="text-warn text-xs font-medium mb-2">Demo data — connect Whoop to see your HRV</p>
                 )}
                 <HrvChart data={hrvChartData} />
-              </div>
+              </FramedCard>
 
-              <div className="bg-card rounded-2xl border border-line divide-y divide-line">
+              <FramedCard className="bg-card rounded-2xl border border-line divide-y divide-line">
                 {[...readings].reverse().map((r, idx, arr) => {
                   const prev = arr[idx + 1]
                   let trend: string | null = null
@@ -393,7 +397,7 @@ export default async function ProgressPage() {
                     </div>
                   )
                 })}
-              </div>
+              </FramedCard>
             </>
           )}
         </section>

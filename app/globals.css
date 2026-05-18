@@ -1,71 +1,69 @@
 @import "tailwindcss";
 
 @theme {
-  /* Backgrounds */
-  --color-page:    #0a0d14;
-  --color-raised:  #0f131c;
-  --color-card:    #131822;
-  --color-surface: #1a2030;
-  --color-pressed: #232a3b;
+  /* ── ai.one Black variant (dark default) ── */
+  --color-page:    #000000;
+  --color-raised:  #050505;
+  --color-card:    #0a0a0a;
+  --color-surface: #141414;
+  --color-pressed: #1a1a1a;
 
-  /* Dividers */
-  --color-line:   #1f2937;
-  --color-linehi: #2d3748;
+  --color-line:   #1a1a1a;
+  --color-linehi: #2a2a2a;
 
-  /* Text */
-  --color-ink:  #f1f5f9;
-  --color-ink2: #94a3b8;
-  --color-ink3: #64748b;
-  --color-ink4: #475569;
+  --color-ink:  #ffffff;
+  --color-ink2: #d0d0d0;
+  --color-ink3: #b8b8b8;
+  --color-ink4: #888888;
 
-  /* Brand */
-  --color-brand:   #4a9eff;
-  --color-brandhi: #6bb0ff;
-  --color-brandlo: #2f86eb;
+  /* Cobalt accent — the ai.one signature */
+  --color-brand:   #3d5afe;
+  --color-brandhi: #5c74ff;
+  --color-brandlo: #2d49e5;
 
-  /* Semantic — goal alignment only */
   --color-ok:   #10b981;
   --color-warn: #f59e0b;
   --color-bad:  #ef4444;
 
-  /* Domain */
   --color-sleep:   #06b6d4;
   --color-strain:  #3b82f6;
   --color-nourish: #a78bfa;
   --color-flesh:   #f472b6;
 
-  /* Typography */
   --font-inter: 'Inter', system-ui, sans-serif;
   --font-mono:  'JetBrains Mono', monospace;
+
+  /* ai.one radius scale — large and pill only */
+  --radius-2xl: 2rem;     /* 32px — standard card */
+  --radius-3xl: 2.5rem;   /* 40px — hero card */
 }
 
 :root {
   color-scheme: dark;
 }
 
-/* Light mode overrides */
+/* ── ai.one Cream variant (light mode) ── */
 [data-theme="light"] {
-  --color-page:    #f8fafc;
-  --color-raised:  #f1f5f9;
+  --color-page:    #efebe2;
+  --color-raised:  #e8e4db;
   --color-card:    #ffffff;
-  --color-surface: #f1f5f9;
-  --color-pressed: #e2e8f0;
-  --color-line:    #e2e8f0;
-  --color-linehi:  #cbd5e1;
-  --color-ink:     #0f172a;
-  --color-ink2:    #334155;
-  --color-ink3:    #64748b;
-  --color-ink4:    #94a3b8;
+  --color-surface: #f5f2eb;
+  --color-pressed: #eae6dd;
+  --color-line:    #e0dcd3;
+  --color-linehi:  #d4d0c7;
+  --color-ink:     #0a0a0a;
+  --color-ink2:    #3a3a3a;
+  --color-ink3:    #5a5a5a;
+  --color-ink4:    #8a8a8a;
   color-scheme: light;
 }
 
-/* Accent color overrides — brand only */
+/* Accent overrides — cobalt is default, others preserved */
 [data-accent="green"]  { --color-brand: #10b981; --color-brandhi: #34d399; --color-brandlo: #059669; }
 [data-accent="purple"] { --color-brand: #8b5cf6; --color-brandhi: #a78bfa; --color-brandlo: #7c3aed; }
 [data-accent="amber"]  { --color-brand: #f59e0b; --color-brandhi: #fbbf24; --color-brandlo: #d97706; }
 [data-accent="red"]    { --color-brand: #ef4444; --color-brandhi: #f87171; --color-brandlo: #dc2626; }
 [data-accent="teal"]   { --color-brand: #06b6d4; --color-brandhi: #22d3ee; --color-brandlo: #0891b2; }
-/* blue is the default in @theme, no override needed */
 
 body {
   background: var(--color-page);
@@ -73,8 +71,40 @@ body {
   font-family: var(--font-inter), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   font-feature-settings: 'cv11' 1;
+  letter-spacing: -0.01em;
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* ── ai.one corner "+" framing markers ── */
+.framed {
+  position: relative;
+}
+.framed > .corner-tl,
+.framed > .corner-tr,
+.framed > .corner-bl,
+.framed > .corner-br {
+  position: absolute;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1;
+  color: currentColor;
+  opacity: 0.35;
+  pointer-events: none;
+  user-select: none;
+}
+.framed > .corner-tl { top: 12px;    left: 12px;    }
+.framed > .corner-tr { top: 12px;    right: 12px;   }
+.framed > .corner-bl { bottom: 12px; left: 12px;    }
+.framed > .corner-br { bottom: 12px; right: 12px;   }
+
+/* ── Eyebrow label utility ── */
+.eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink3);
 }

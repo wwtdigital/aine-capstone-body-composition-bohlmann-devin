@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, CheckCircle } from 'lucide-react'
+import FramedCard from '@/components/FramedCard'
 
 type SessionType = 'Strength' | 'Soccer' | 'Cardio' | 'Other'
 type Volume = 'low' | 'medium' | 'high'
@@ -136,10 +137,11 @@ export default function LogWorkoutPage() {
         <h1 className="text-2xl font-bold text-ink tracking-tight">Log Workout</h1>
       </div>
 
-      <div className="px-4 space-y-6">
+      <FramedCard className="mx-4 bg-card rounded-2xl border border-line p-4">
+      <div className="space-y-6">
         {/* Session type */}
         <div>
-          <p className="text-xs font-semibold text-ink3 uppercase tracking-wider mb-3">Session Type</p>
+          <p className="eyebrow mb-3">Session Type</p>
           <div className="flex gap-2 flex-wrap">
             {(['Strength', 'Soccer', 'Cardio', 'Other'] as SessionType[]).map(type => (
               <button
@@ -159,7 +161,7 @@ export default function LogWorkoutPage() {
 
         {/* Duration */}
         <div>
-          <label className="text-xs font-semibold text-ink3 uppercase tracking-wider block mb-2">
+          <label className="eyebrow block mb-2">
             Duration (min)
           </label>
           <input
@@ -183,7 +185,7 @@ export default function LogWorkoutPage() {
         {/* Muscle group selector */}
         {showMusclePicker && (
           <div>
-            <p className="text-xs font-semibold text-ink3 uppercase tracking-wider mb-3">Muscles Worked</p>
+            <p className="eyebrow mb-3">Muscles Worked</p>
             <div className="grid grid-cols-3 gap-2">
               {MUSCLE_IDS.map(id => {
                 const selected = id in selectedMuscles
@@ -225,7 +227,7 @@ export default function LogWorkoutPage() {
 
         {/* Notes */}
         <div>
-          <label className="text-xs font-semibold text-ink3 uppercase tracking-wider block mb-2">
+          <label className="eyebrow block mb-2">
             Notes
           </label>
           <textarea
@@ -243,11 +245,12 @@ export default function LogWorkoutPage() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="bg-brand text-page font-bold rounded-2xl py-4 w-full disabled:opacity-40 active:scale-95 transition-transform"
+          className="bg-brand text-page font-bold rounded-full py-4 w-full disabled:opacity-40 active:scale-95 transition-transform"
         >
-          {saving ? 'Saving...' : 'Save Workout'}
+          {saving ? 'Saving...' : 'Save Workout ›'}
         </button>
       </div>
+      </FramedCard>
     </div>
   )
 }

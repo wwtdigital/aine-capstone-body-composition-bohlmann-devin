@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, FormEvent } from 'react'
 import { Send, Sparkles } from 'lucide-react'
+import ISymbol from '@/components/ISymbol'
 
 type Message = { role: 'user' | 'assistant'; content: string }
 
@@ -83,7 +84,10 @@ export default function ChatPage() {
     <div className="min-h-screen bg-page flex flex-col">
       {/* Header */}
       <div className="px-4 pt-12 pb-4 shrink-0">
-        <h1 className="text-2xl font-bold text-ink tracking-tight">Ask</h1>
+        <div className="flex items-center gap-1.5">
+          <ISymbol size={14} className="text-ink3 opacity-60" />
+          <h1 className="text-2xl font-bold text-ink tracking-tight">Ask</h1>
+        </div>
         <div className="flex items-center gap-1.5 mt-1">
           <div className="w-1.5 h-1.5 rounded-full bg-ok" />
           <p className="text-ink3 text-sm">Your data is loaded as context</p>
@@ -94,7 +98,7 @@ export default function ChatPage() {
       <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-3">
         {messages.length === 0 && (
           <div className="pt-2 space-y-3">
-            <p className="text-ink3 text-xs font-semibold uppercase tracking-wider">Try asking</p>
+            <p className="eyebrow">Try asking</p>
             <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
               {SUGGESTIONS.map(s => (
                 <button
