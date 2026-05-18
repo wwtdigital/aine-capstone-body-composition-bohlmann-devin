@@ -1,15 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import { db } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get('code')
   const error = searchParams.get('error')
+  const returnedState = searchParams.get('state')
 
   if (error || !code) {
     const url = new URL('/settings', request.url)
     url.searchParams.set('whoop', 'error')
     url.searchParams.set('detail', error ?? 'no_code')
+    return NextResponse.redirect(url)
+  }
+
+  // Verify state to prevent CSRF
+  const cookieStore = await cookies()
+  const expectedState = cookieStore.get('whoop_oauth_state')?.value
+  cookieStore.delete('whoop_oauth_state')
+
+  if (!expectedState || returnedState !== expectedState) {
+    const url = new URL('/settings', request.url)
+    url.searchParams.set('whoop', 'error')
+    url.searchParams.set('detail', 'state_mismatch')
     return NextResponse.redirect(url)
   }
 
