@@ -4,11 +4,13 @@ import type { NextRequest } from 'next/server'
 const PUBLIC_PREFIXES = [
   '/login',
   '/api/auth/login',
+  '/api/auth/check',
   '/api/whoop/callback',
   '/favicon.ico',
   '/manifest.json',
   '/icons',
   '/apple-touch-icon',
+  '/sw.js',
 ]
 
 export function proxy(request: NextRequest) {
@@ -20,9 +22,9 @@ export function proxy(request: NextRequest) {
 
   const session = request.cookies.get('bcc_session')
   if (session?.value !== process.env.APP_PASSWORD) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('next', pathname)
+    return NextResponse.redirect(loginUrl)
   }
 
   return NextResponse.next()
