@@ -4,6 +4,9 @@ import { GOALS } from '@/lib/goals'
 import { Plus, Upload, Camera } from 'lucide-react'
 import WeekCharts from '../week/WeekCharts'
 import BodyCompCharts from '../month/BodyCompCharts'
+import HrvChart from './HrvChart'
+import MacroRadial from '@/components/MacroRadial'
+import BodyBattery from '@/components/BodyBattery'
 
 export const revalidate = 0
 
@@ -59,6 +62,17 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
   )
 }
 
+function generateSyntheticHrv(): { date: string; hrv: number }[] {
+  const base = 52, variance = 8
+  return Array.from({ length: 30 }, (_, i) => {
+    const d = new Date(Date.now() - (29 - i) * 86400000)
+    return {
+      date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      hrv: Math.round(base + (Math.random() - 0.5) * variance * 2 + Math.sin(i / 4) * 4),
+    }
+  })
+}
+
 export default async function ProgressPage() {
   // Nutrition query (last 7 days)
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
@@ -90,6 +104,13 @@ export default async function ProgressPage() {
     ? Math.round(daysWithData.reduce((s, d) => s + d.protein, 0) / daysWithData.length)
     : 0
 
+  // Streak: consecutive days logged from most recent
+  const streakCount = [...days].reverse().reduce((count, d) => {
+    if (count === -1) return count // already broken
+    return d.calories > 0 ? count + 1 : -1
+  }, 0)
+  const streak = streakCount === -1 ? 0 : streakCount
+
   // Body comp query
   const bodyResult = await db.execute({
     sql: `SELECT reading_date, weight_kg, body_fat_pct, lean_mass_kg FROM inbody_readings WHERE user_id = 'will' ORDER BY reading_date ASC LIMIT 30`,
@@ -105,6 +126,27 @@ export default async function ProgressPage() {
     bf: r.body_fat_pct,
     lean: r.lean_mass_kg,
   }))
+
+  // Today's macro breakdown
+  const todayNutritionResult = await db.execute({
+    sql: `SELECT COALESCE(SUM(total_calories),0) as cal, COALESCE(SUM(total_protein),0) as prot, COALESCE(SUM(total_carbs),0) as carbs, COALESCE(SUM(total_fat),0) as fat FROM meals WHERE user_id = 'will' AND logged_at >= ?`,
+    args: [new Date().setUTCHours(0,0,0,0)],
+  })
+  const todayN = todayNutritionResult.rows[0] as unknown as { cal: number; prot: number; carbs: number; fat: number }
+
+  const whoopHrvResult = await db.execute({
+    sql: `SELECT date, hrv_ms FROM whoop_daily WHERE user_id = 'will' ORDER BY date ASC LIMIT 30`,
+    args: [],
+  })
+  const whoopHrv = whoopHrvResult.rows as unknown as { date: string; hrv_ms: number | null }[]
+
+  const hrvChartData = whoopHrv.length >= 3
+    ? whoopHrv.map(r => ({
+        date: new Date(r.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        hrv: r.hrv_ms != null ? Math.round(r.hrv_ms) : null,
+      }))
+    : generateSyntheticHrv()
+  const isHrvSynthetic = whoopHrv.length < 3
 
   return (
     <div className="min-h-screen bg-page pb-24">
@@ -131,7 +173,11 @@ export default async function ProgressPage() {
       <div className="px-4 pt-6 space-y-8">
         {/* ── Nutrition (7 Days) ── */}
         <section id="nutrition" className="space-y-4">
-          <SectionHeader>Nutrition (7 Days)</SectionHeader>
+          <div className="flex items-center gap-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-ink3 shrink-0">Nutrition (7 Days)</h2>
+            <div className="flex-1 h-px bg-line" />
+            {streak > 0 && <span className="text-xs font-bold text-ok shrink-0">🔥 {streak}-day streak</span>}
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-card rounded-2xl border border-line p-4">
@@ -154,6 +200,22 @@ export default async function ProgressPage() {
                 </p>
               )}
             </div>
+          </div>
+
+          <div className="bg-card rounded-2xl border border-line p-4">
+            <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-3">Today&apos;s Macro Split</p>
+            <MacroRadial
+              calories={Math.round(todayN.cal)}
+              protein={Math.round(todayN.prot)}
+              carbs={Math.round(todayN.carbs)}
+              fat={Math.round(todayN.fat)}
+              calGoal={GOALS.daily_calories}
+              proteinGoal={GOALS.daily_protein_g}
+            />
+          </div>
+
+          <div className="bg-card rounded-2xl border border-line p-4">
+            <BodyBattery />
           </div>
 
           {daysWithData.length === 0 ? (
@@ -230,6 +292,44 @@ export default async function ProgressPage() {
             </div>
           ) : (
             <>
+              {readings.length >= 2 && (() => {
+                const first = readings[0]
+                const last = readings[readings.length - 1]
+                const daysDiff = Math.round((last.reading_date - first.reading_date) / (1000 * 60 * 60 * 24))
+                const wDelta = last.weight_kg != null && first.weight_kg != null ? last.weight_kg - first.weight_kg : null
+                const bDelta = last.body_fat_pct != null && first.body_fat_pct != null ? last.body_fat_pct - first.body_fat_pct : null
+                const lDelta = last.lean_mass_kg != null && first.lean_mass_kg != null ? last.lean_mass_kg - first.lean_mass_kg : null
+
+                const DeltaChip = ({ value, unit, label, lowerIsBetter }: { value: number | null; unit: string; label: string; lowerIsBetter: boolean }) => {
+                  if (value == null) return null
+                  const good = lowerIsBetter ? value < 0 : value > 0
+                  const color = Math.abs(value) < 0.1 ? 'text-ink3' : good ? 'text-ok' : 'text-warn'
+                  const arrow = value > 0.1 ? '↑' : value < -0.1 ? '↓' : '→'
+                  return (
+                    <div className="text-center">
+                      <p className={`text-lg font-bold tabular-nums ${color}`}>
+                        {arrow} {Math.abs(value).toFixed(1)}{unit}
+                      </p>
+                      <p className="text-ink3 text-xs mt-0.5">{label}</p>
+                    </div>
+                  )
+                }
+
+                return (
+                  <div className="bg-gradient-to-br from-brand/8 to-ok/5 rounded-2xl border border-brand/20 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-ink2 text-xs font-semibold uppercase tracking-wider">Progress Since First Scan</p>
+                      <p className="text-ink3 text-xs">{daysDiff}d</p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <DeltaChip value={wDelta} unit="kg" label="Weight" lowerIsBetter={true} />
+                      <DeltaChip value={bDelta} unit="%" label="Body Fat" lowerIsBetter={true} />
+                      <DeltaChip value={lDelta} unit="kg" label="Lean Mass" lowerIsBetter={false} />
+                    </div>
+                  </div>
+                )
+              })()}
+
               <div className="grid grid-cols-2 gap-3">
                 <GoalCard
                   label="Weight"
@@ -254,6 +354,13 @@ export default async function ProgressPage() {
                   <BodyCompCharts data={chartData} weightGoal={GOALS.weight_kg} bfGoal={GOALS.body_fat_pct} />
                 </div>
               )}
+
+              <div className="bg-card rounded-2xl border border-line p-4">
+                {isHrvSynthetic && (
+                  <p className="text-warn text-xs font-medium mb-2">Demo data — connect Whoop to see your HRV</p>
+                )}
+                <HrvChart data={hrvChartData} />
+              </div>
 
               <div className="bg-card rounded-2xl border border-line divide-y divide-line">
                 {[...readings].reverse().map((r, idx, arr) => {

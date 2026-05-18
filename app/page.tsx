@@ -3,6 +3,7 @@ import { GOALS } from '@/lib/goals'
 import Link from 'next/link'
 import MacroRing from '@/components/MacroRing'
 import MealList from '@/components/MealSheet'
+import DailyInsight from '@/components/DailyInsight'
 
 export const revalidate = 0
 
@@ -74,12 +75,13 @@ export default async function Today() {
     return { key, initial, color }
   })
 
-  // Recovery score color
-  const recoveryColor = (score: number | null) =>
-    score == null ? 'text-ink3'
-    : score >= 67 ? 'text-ok'
-    : score >= 34 ? 'text-warn'
-    : 'text-bad'
+  // Streak: consecutive days from today with any meals logged
+  const streakDays = [...last7Days].reverse() // today first
+  let streak = 0
+  for (const day of streakDays) {
+    if (day.color !== 'bg-surface') streak++
+    else break
+  }
 
   return (
     <div className="min-h-screen bg-page pb-24">
@@ -110,17 +112,13 @@ export default async function Today() {
           </Link>
         )}
 
-        {/* Large recovery score */}
-        <div className="flex items-center gap-4 mb-4">
-          <div>
-            <p className={`text-5xl font-bold tabular-nums leading-none ${recoveryColor(whoop?.recovery_score ?? (whoop ? null : 74))}`}>
-              {whoop ? (whoop.recovery_score ?? '—') : <span className="text-ink3">74</span>}
-            </p>
-            <p className="text-ink3 text-xs mt-1">recovery score</p>
-          </div>
-          <div className="flex-1">
+        {/* Recovery arc + HRV sparkline */}
+        <div className="flex items-center gap-3 mb-4">
+          <RecoveryArc score={whoop?.recovery_score ?? null} muted={!whoop} />
+          <div className="flex-1 min-w-0">
             <HrvSparkline values={whoop ? hrvValues : [48, 51, 55, 50, 53, 54, 52]} muted={!whoop} />
-            <p className="text-ink3 text-xs mt-1 text-right">HRV 7d</p>
+            <p className="text-ink3 text-xs mt-1">HRV 7-day trend</p>
+            {!whoop && <p className="text-ink4 text-xs mt-1">Demo data — connect Whoop</p>}
           </div>
         </div>
 
@@ -166,6 +164,12 @@ export default async function Today() {
             </div>
           ))}
         </div>
+
+        {/* Sleep stages */}
+        <div className="mt-3 pt-3 border-t border-line">
+          <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-2">Sleep Stages</p>
+          <SleepStagesBar minutes={whoop?.sleep_minutes ?? (whoop ? null : 432)} muted={!whoop} />
+        </div>
       </div>
 
       {/* Section 3: Nutrition */}
@@ -205,8 +209,13 @@ export default async function Today() {
 
       {/* 7-day adherence strip */}
       <div className="mx-4 mt-3 bg-card rounded-2xl border border-line p-4">
-        <span className="text-xs font-semibold text-ink3 uppercase tracking-wider">7-Day Adherence</span>
-        <div className="flex items-end justify-between mt-3 gap-1">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-semibold text-ink3 uppercase tracking-wider">7-Day Adherence</span>
+          {streak > 0 && (
+            <span className="text-xs font-bold text-ok">🔥 {streak}-day streak</span>
+          )}
+        </div>
+        <div className="flex items-end justify-between gap-1">
           {last7Days.map(({ key, initial, color }) => (
             <div key={key} className="flex flex-col items-center gap-1.5 flex-1">
               <div className={`w-full h-2 rounded-full ${color}`} />
@@ -281,6 +290,9 @@ export default async function Today() {
         </div>
       )}
 
+      {/* AI Daily Insight */}
+      <DailyInsight />
+
       {/* Section 5: Meals Today */}
       <div className="mx-4 mt-4">
         <div className="flex items-center justify-between mb-3">
@@ -331,6 +343,82 @@ function HrvSparkline({ values, muted = false }: { values: (number | null)[]; mu
         className="text-brand"
       />
     </svg>
+  )
+}
+
+function RecoveryArc({ score, muted = false }: { score: number | null; muted?: boolean }) {
+  const pct = score != null ? Math.min(1, score / 100) : 0.74
+  const r = 48
+  const cx = 60, cy = 60
+  const toRad = (deg: number) => (deg * Math.PI) / 180
+  const startAngle = 150
+  const sweep = 240
+  const endAngle = startAngle + sweep
+  const sx = cx + r * Math.cos(toRad(startAngle))
+  const sy = cy + r * Math.sin(toRad(startAngle))
+  const ex = cx + r * Math.cos(toRad(endAngle))
+  const ey = cy + r * Math.sin(toRad(endAngle))
+  const fillAngle = startAngle + sweep * pct
+  const fx = cx + r * Math.cos(toRad(fillAngle))
+  const fy = cy + r * Math.sin(toRad(fillAngle))
+  const largeArc = sweep * pct > 180 ? 1 : 0
+  const fillLargeArc = sweep > 180 ? 1 : 0
+
+  const color = score == null ? '#64748b'
+    : score >= 67 ? '#10b981'
+    : score >= 34 ? '#f59e0b'
+    : '#ef4444'
+
+  return (
+    <svg viewBox="0 0 120 120" className={`w-28 h-28 shrink-0 ${muted ? 'opacity-50' : ''}`}>
+      {/* Track */}
+      <path
+        d={`M ${sx} ${sy} A ${r} ${r} 0 ${fillLargeArc} 1 ${ex} ${ey}`}
+        fill="none" stroke="#1e293b" strokeWidth="10" strokeLinecap="round"
+      />
+      {/* Fill */}
+      {pct > 0.01 && (
+        <path
+          d={`M ${sx} ${sy} A ${r} ${r} 0 ${largeArc} 1 ${fx} ${fy}`}
+          fill="none" stroke={color} strokeWidth="10" strokeLinecap="round"
+        />
+      )}
+      {/* Score */}
+      <text x="60" y="55" textAnchor="middle" fontSize="24" fontWeight="700" fill={muted ? '#64748b' : '#f1f5f9'} fontFamily="Inter, sans-serif">
+        {score ?? '74'}
+      </text>
+      <text x="60" y="70" textAnchor="middle" fontSize="9" fill="#64748b" fontFamily="Inter, sans-serif" letterSpacing="1">
+        RECOVERY
+      </text>
+    </svg>
+  )
+}
+
+function SleepStagesBar({ minutes, muted = false }: { minutes: number | null; muted?: boolean }) {
+  const total = minutes ?? 432
+  const stages = [
+    { label: 'Awake', pct: 0.05, color: '#475569' },
+    { label: 'Light', pct: 0.50, color: '#3b82f6' },
+    { label: 'Deep',  pct: 0.20, color: '#6366f1' },
+    { label: 'REM',   pct: 0.25, color: '#8b5cf6' },
+  ]
+  const fmt = (m: number) => `${Math.floor(m / 60)}h ${Math.round(m % 60)}m`
+  return (
+    <div className={muted ? 'opacity-50' : ''}>
+      <div className="flex rounded-full overflow-hidden h-2.5 mb-2">
+        {stages.map(s => (
+          <div key={s.label} style={{ width: `${s.pct * 100}%`, backgroundColor: s.color }} />
+        ))}
+      </div>
+      <div className="flex gap-3 flex-wrap">
+        {stages.map(s => (
+          <div key={s.label} className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+            <span className="text-ink3 text-xs">{s.label} {fmt(total * s.pct)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
