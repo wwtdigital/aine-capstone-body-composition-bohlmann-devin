@@ -150,8 +150,11 @@ export default async function ProgressPage() {
 
   return (
     <div className="min-h-screen bg-page pb-24">
-      <div className="px-4 pt-12 pb-4">
+      <div className="px-4 pt-12 pb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-ink tracking-tight">Progress</h1>
+        <Link href="/muscles" className="text-brand text-sm font-semibold">
+          Muscle Map →
+        </Link>
       </div>
 
       {/* Sticky tab bar */}

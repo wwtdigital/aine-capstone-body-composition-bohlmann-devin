@@ -4,6 +4,7 @@ import BottomNav from '@/components/BottomNav'
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration'
 import PwaInstallPrompt from '@/components/PwaInstallPrompt'
 import ThemeProvider from '@/components/ThemeProvider'
+import FloatingChat from '@/components/FloatingChat'
 import './globals.css'
 
 const inter = Inter({
@@ -62,6 +63,7 @@ export default function RootLayout({
           <PwaInstallPrompt />
           {children}
           <BottomNav />
+          <FloatingChat />
         </ThemeProvider>
       </body>
     </html>

@@ -14,23 +14,43 @@ const SUGGESTIONS = [
   'What should I focus on today?',
 ]
 
+const LS_SESSION = 'bcc-chat-page-session'
+
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [sessionId, setSessionId] = useState<string>('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    let sid = localStorage.getItem(LS_SESSION)
+    if (!sid) {
+      sid = crypto.randomUUID()
+      localStorage.setItem(LS_SESSION, sid)
+    }
+    setSessionId(sid)
+
+    // Load existing history for this page session
+    fetch(`/api/chat/history?sessionId=${sid}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.messages?.length) setMessages(data.messages)
+      })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
   async function send(text: string) {
-    if (!text.trim() || loading) return
-    const userMsg: Message = { role: 'user', content: text.trim() }
-    const next = [...messages, userMsg]
-    setMessages(next)
+    if (!text.trim() || loading || !sessionId) return
+    const trimmed = text.trim()
+
+    setMessages(prev => [...prev, { role: 'user', content: trimmed }])
     setInput('')
     setLoading(true)
     setError('')
@@ -39,7 +59,7 @@ export default function ChatPage() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({ message: trimmed, sessionId }),
       })
       const data = await res.json()
       if (!res.ok) {
