@@ -15,11 +15,12 @@ Next.js 16 · Tailwind v4 · TypeScript · Turso (SQLite) · Anthropic API · Ve
 | 1 | Scaffold + auth + deploy | Done |
 | 2 | Photo meal logging (Claude vision) | Done |
 | 3 | InBody manual entry + PDF bulk import | Done |
-| 4 | Today / Week / Month dashboards | Pending |
-| 5 | Gap Analysis (Claude reasoning) | Pending |
-| 6 | Conversational query sidebar | Pending |
-| 7 | Whoop OAuth + sync | Pending |
-| 8 | Gallery + PWA install | Pending |
+| 4 | Today / Week / Month dashboards | Done |
+| 5 | Gap Analysis (Claude reasoning) | Done |
+| 6 | Conversational query sidebar | Done |
+| 7 | Whoop OAuth + sync | Done |
+| 8 | Gallery + PWA install | Done |
+| 9 | Meal detail + design system overhaul | Done |
 
 ## Dev
 
