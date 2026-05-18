@@ -16,9 +16,15 @@ type MealItem = {
 
 type Step = 'capture' | 'analyzing' | 'confirm' | 'saving' | 'error'
 
-const LOADING_MESSAGES = [
+const PHOTO_LOADING_MESSAGES = [
   'Reading the plate...',
   'Identifying portions...',
+  'Calculating macros...',
+  'Almost done...',
+]
+
+const TEXT_LOADING_MESSAGES = [
+  'Estimating portions...',
   'Calculating macros...',
   'Almost done...',
 ]
@@ -59,13 +65,15 @@ function totals(items: MealItem[]) {
 
 export default function LogPage() {
   const [step, setStep] = useState<Step>('capture')
+  const [mode, setMode] = useState<'photo' | 'text'>('photo')
   const [preview, setPreview] = useState<string | null>(null)
   const [imageBase64, setImageBase64] = useState<string | null>(null)
   const [mediaType, setMediaType] = useState('image/jpeg')
+  const [description, setDescription] = useState('')
   const [items, setItems] = useState<MealItem[]>([])
   const [notes, setNotes] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
-  const [loadingText, setLoadingText] = useState(LOADING_MESSAGES[0])
+  const [loadingText, setLoadingText] = useState(PHOTO_LOADING_MESSAGES[0])
   const [loggedAt] = useState(() => Date.now())
   const fileRef = useRef<HTMLInputElement>(null)
   const loadingInterval = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -73,23 +81,45 @@ export default function LogPage() {
 
   useEffect(() => {
     if (step === 'analyzing') {
+      const messages = mode === 'text' ? TEXT_LOADING_MESSAGES : PHOTO_LOADING_MESSAGES
       let idx = 0
+      setLoadingText(messages[0])
       loadingInterval.current = setInterval(() => {
-        idx = (idx + 1) % LOADING_MESSAGES.length
-        setLoadingText(LOADING_MESSAGES[idx])
+        idx = (idx + 1) % messages.length
+        setLoadingText(messages[idx])
       }, 2500)
     } else {
       if (loadingInterval.current) clearInterval(loadingInterval.current)
     }
     return () => { if (loadingInterval.current) clearInterval(loadingInterval.current) }
-  }, [step])
+  }, [step, mode])
+
+  async function handleTextAnalyze() {
+    if (!description.trim()) return
+    setStep('analyzing')
+    try {
+      const res = await fetch('/api/meals/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setErrorMsg(data.error ?? 'Analysis failed. Try again.'); setStep('error'); return }
+      setItems(data.items ?? [])
+      setNotes(data.notes ?? '')
+      setStep('confirm')
+    } catch {
+      setErrorMsg('Connection error. Try again.')
+      setStep('error')
+    }
+  }
 
   async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
     setPreview(URL.createObjectURL(file))
     setStep('analyzing')
-    setLoadingText(LOADING_MESSAGES[0])
+    setLoadingText(PHOTO_LOADING_MESSAGES[0])
 
     try {
       const { base64, mediaType: mt } = await resizeAndEncode(file)
@@ -151,24 +181,62 @@ export default function LogPage() {
       <div className="min-h-screen bg-page pb-24">
         <div className="px-4 pt-12 pb-6">
           <h1 className="text-2xl font-bold text-ink tracking-tight">Log Meal</h1>
-          <p className="text-ink3 text-sm">Photo-based analysis</p>
+          <p className="text-ink3 text-sm">{mode === 'photo' ? 'Photo-based analysis' : 'Text-based analysis'}</p>
+        </div>
+
+        <div className="px-4 mb-4">
+          <div className="inline-flex rounded-2xl bg-surface p-1 gap-1">
+            <button
+              onClick={() => { setMode('photo'); setDescription('') }}
+              className={`px-5 py-2 rounded-xl font-semibold text-sm transition-colors ${mode === 'photo' ? 'bg-brand text-page' : 'bg-surface text-ink3'}`}
+            >
+              Photo
+            </button>
+            <button
+              onClick={() => { setMode('text'); setPreview(null); setImageBase64(null) }}
+              className={`px-5 py-2 rounded-xl font-semibold text-sm transition-colors ${mode === 'text' ? 'bg-brand text-page' : 'bg-surface text-ink3'}`}
+            >
+              Text
+            </button>
+          </div>
         </div>
 
         <div className="px-4">
-          <label
-            htmlFor="meal-photo"
-            className="flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed border-line bg-card cursor-pointer active:scale-95 transition-transform"
-            style={{ minHeight: '260px' }}
-          >
-            <div className="flex flex-col items-center gap-3 py-12 px-6 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-surface flex items-center justify-center text-3xl">📷</div>
-              <div>
-                <p className="text-ink font-semibold text-lg">Take a photo</p>
-                <p className="text-ink3 text-sm mt-1">or choose from library</p>
-              </div>
+          {mode === 'photo' ? (
+            <>
+              <label
+                htmlFor="meal-photo"
+                className="flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed border-line bg-card cursor-pointer active:scale-95 transition-transform"
+                style={{ minHeight: '260px' }}
+              >
+                <div className="flex flex-col items-center gap-3 py-12 px-6 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-surface flex items-center justify-center text-3xl">📷</div>
+                  <div>
+                    <p className="text-ink font-semibold text-lg">Take a photo</p>
+                    <p className="text-ink3 text-sm mt-1">or choose from library</p>
+                  </div>
+                </div>
+              </label>
+              <input ref={fileRef} id="meal-photo" type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
+            </>
+          ) : (
+            <div className="space-y-3">
+              <textarea
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                placeholder="Describe your meal — e.g. 'grilled chicken breast, 1 cup white rice, steamed broccoli'"
+                className="bg-card border border-line rounded-2xl px-4 py-3 text-ink w-full focus:outline-none resize-none"
+                style={{ minHeight: '160px' }}
+              />
+              <button
+                onClick={handleTextAnalyze}
+                disabled={!description.trim()}
+                className="bg-brand text-page font-semibold rounded-2xl py-4 w-full disabled:opacity-40 active:scale-95 transition-transform"
+              >
+                Analyze
+              </button>
             </div>
-          </label>
-          <input ref={fileRef} id="meal-photo" type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
+          )}
         </div>
       </div>
     )

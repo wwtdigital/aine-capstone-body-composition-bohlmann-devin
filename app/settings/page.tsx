@@ -4,6 +4,103 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Activity, CheckCircle, AlertCircle, RefreshCw, Unlink, ExternalLink, Zap } from 'lucide-react'
 
+type Goals = {
+  daily_calories: number
+  daily_protein_g: number
+  daily_carbs_g: number
+  daily_fat_g: number
+  target_body_fat_pct: number
+  target_lean_mass_kg: number
+  daily_sleep_hours: number
+}
+
+const GOAL_DEFAULTS: Goals = {
+  daily_calories: 2500,
+  daily_protein_g: 200,
+  daily_carbs_g: 200,
+  daily_fat_g: 80,
+  target_body_fat_pct: 12,
+  target_lean_mass_kg: 80,
+  daily_sleep_hours: 8,
+}
+
+const GOAL_FIELDS: { key: keyof Goals; label: string; step: number }[] = [
+  { key: 'daily_calories',      label: 'Daily Calories',      step: 50 },
+  { key: 'daily_protein_g',     label: 'Daily Protein (g)',   step: 1 },
+  { key: 'daily_carbs_g',       label: 'Daily Carbs (g)',     step: 1 },
+  { key: 'daily_fat_g',         label: 'Daily Fat (g)',       step: 1 },
+  { key: 'target_body_fat_pct', label: 'Target Body Fat (%)', step: 0.1 },
+  { key: 'target_lean_mass_kg', label: 'Target Lean Mass (kg)', step: 0.1 },
+  { key: 'daily_sleep_hours',   label: 'Target Sleep (hrs)',  step: 0.5 },
+]
+
+function GoalsSection() {
+  const [goals, setGoals] = useState<Goals>(GOAL_DEFAULTS)
+  const [loading, setLoading] = useState(true)
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+
+  useEffect(() => {
+    fetch('/api/goals')
+      .then(r => r.json())
+      .then(data => { setGoals(data); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [])
+
+  async function handleSave() {
+    setSaveState('saving')
+    try {
+      const res = await fetch('/api/goals', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(goals),
+      })
+      setSaveState(res.ok ? 'saved' : 'error')
+    } catch {
+      setSaveState('error')
+    }
+    setTimeout(() => setSaveState('idle'), 2500)
+  }
+
+  return (
+    <div>
+      <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-2 px-1">Goals</p>
+      <div className="bg-card rounded-2xl border border-line p-4 space-y-3">
+        {loading ? (
+          <div className="h-48 bg-surface rounded-xl animate-pulse" />
+        ) : (
+          <>
+            {GOAL_FIELDS.map(({ key, label, step }) => (
+              <div key={key}>
+                <label className="text-ink3 text-xs font-medium block mb-1">{label}</label>
+                <input
+                  type="number"
+                  step={step}
+                  value={goals[key]}
+                  onChange={e => setGoals(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))}
+                  className="w-full bg-surface rounded-xl px-4 py-3 text-ink border border-line focus:outline-none"
+                />
+              </div>
+            ))}
+            <button
+              onClick={handleSave}
+              disabled={saveState === 'saving'}
+              className="w-full bg-brand text-page font-semibold rounded-xl py-3 mt-1 disabled:opacity-50 active:scale-95 transition-transform"
+            >
+              {saveState === 'saving' ? 'Saving…' : 'Save Goals'}
+            </button>
+            {saveState === 'saved' && (
+              <p className="text-ok text-xs text-center font-medium">Saved</p>
+            )}
+            {saveState === 'error' && (
+              <p className="text-bad text-xs text-center">Failed to save. Try again.</p>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 type WhoopDay = {
   date: string
   recovery_score: number | null
@@ -220,22 +317,7 @@ function SettingsContent() {
         )}
 
         {/* Goals */}
-        <div>
-          <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-2 px-1">Goals</p>
-          <div className="bg-card rounded-2xl border border-line divide-y divide-line">
-            {[
-              { label: 'Target Weight', value: '81.6 kg (180 lbs)' },
-              { label: 'Target Body Fat', value: '12%' },
-              { label: 'Daily Calories', value: '2,500 kcal' },
-              { label: 'Daily Protein', value: '200g' },
-            ].map(({ label, value }) => (
-              <div key={label} className="flex items-center justify-between px-4 py-3.5">
-                <p className="text-ink2 text-sm">{label}</p>
-                <p className="text-ink text-sm font-semibold">{value}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+        <GoalsSection />
       </div>
     </div>
   )

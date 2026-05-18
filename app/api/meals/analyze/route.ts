@@ -46,63 +46,79 @@ export type MealItem = {
   confidence: 'low' | 'medium' | 'high'
 }
 
+const TEXT_PROMPT = (description: string) =>
+  `You are estimating macros for a described meal. The user says: "${description}"
+Break it into individual items with estimated portions and calories/protein/carbs/fat.
+Be realistic with portion sizes. Mark confidence appropriately.
+Output ONLY JSON matching this schema:
+{"items":[{"name":"...","portion":"...","calories":0,"protein":0,"carbs":0,"fat":0,"confidence":"low|medium|high"}],"notes":"..."}`
+
 export async function POST(request: NextRequest) {
-  let body: { imageBase64: string; mediaType?: string }
+  let body: { imageBase64?: string; mediaType?: string; description?: string }
   try {
     body = await request.json()
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  const { imageBase64, mediaType = 'image/jpeg' } = body
+  const { imageBase64, mediaType = 'image/jpeg', description } = body
 
-  if (!imageBase64) {
-    return NextResponse.json({ error: 'imageBase64 required' }, { status: 400 })
+  if (!imageBase64 && !description) {
+    return NextResponse.json({ error: 'imageBase64 or description required' }, { status: 400 })
   }
 
   let raw: string
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1024,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: mediaType as MediaType,
-                data: imageBase64,
+    if (description) {
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: TEXT_PROMPT(description) }],
+      })
+      raw = response.content[0].type === 'text' ? response.content[0].text : ''
+    } else {
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1024,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image',
+                source: {
+                  type: 'base64',
+                  media_type: mediaType as MediaType,
+                  data: imageBase64!,
+                },
               },
-            },
-            { type: 'text', text: VISION_PROMPT },
-          ],
-        },
-      ],
-    })
-    raw = response.content[0].type === 'text' ? response.content[0].text : ''
+              { type: 'text', text: VISION_PROMPT },
+            ],
+          },
+        ],
+      })
+      raw = response.content[0].type === 'text' ? response.content[0].text : ''
+    }
   } catch (err) {
-    console.error('Claude vision error:', err)
-    return NextResponse.json({ error: 'Vision call failed. Try again.' }, { status: 502 })
+    console.error('Claude error:', err)
+    return NextResponse.json({ error: 'Analysis failed. Try again.' }, { status: 502 })
   }
 
   const jsonMatch = raw.match(/\{[\s\S]*\}/)
   if (!jsonMatch) {
-    return NextResponse.json({ error: "Couldn't read this photo. Try again or log manually.", raw }, { status: 422 })
+    return NextResponse.json({ error: "Couldn't parse the response. Try again or log manually.", raw }, { status: 422 })
   }
 
   let parsed: unknown
   try {
     parsed = JSON.parse(jsonMatch[0])
   } catch {
-    return NextResponse.json({ error: "Couldn't read this photo. Try again or log manually.", raw }, { status: 422 })
+    return NextResponse.json({ error: "Couldn't parse the response. Try again or log manually.", raw }, { status: 422 })
   }
 
   const meal = validateMealJson(parsed)
   if (!meal) {
-    return NextResponse.json({ error: "Couldn't read this photo. Try again or log manually.", raw }, { status: 422 })
+    return NextResponse.json({ error: "Couldn't parse the response. Try again or log manually.", raw }, { status: 422 })
   }
 
   return NextResponse.json(meal)
