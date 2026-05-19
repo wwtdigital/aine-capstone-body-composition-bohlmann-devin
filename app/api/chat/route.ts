@@ -176,7 +176,7 @@ Keep responses concise — 2-4 sentences unless detail is requested. Use his act
         args: [assistantMsgId, USER_ID, fullReply, Date.now()],
       })
     })
-    .catch(err => console.error('Failed to save assistant reply:', err))
+    .catch((err: unknown) => console.error('Failed to save assistant reply:', err))
 
   return new Response(readable, {
     headers: { 'Content-Type': 'text/plain; charset=utf-8' },
