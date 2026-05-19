@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { anthropic } from '@/lib/anthropic'
+import { USER_ID } from '@/lib/userId'
 
 const PROMPT = `You are analyzing a physique photo of a hybrid athlete (5x lifting + 3x soccer per week).
 Identify visible muscle groups and rate their relative development on a 1-10 scale where 5 = balanced/average for an athletic person.
@@ -86,7 +87,7 @@ export async function POST(request: NextRequest) {
   await db.execute({
     sql: `INSERT INTO muscle_assessments (id, user_id, assessed_at, scores_json, notes)
           VALUES (?, ?, ?, ?, ?)`,
-    args: [id, 'will', assessedAt, JSON.stringify(parsed.scores), parsed.notes ?? null],
+    args: [id, USER_ID, assessedAt, JSON.stringify(parsed.scores), parsed.notes ?? null],
   })
 
   return NextResponse.json({

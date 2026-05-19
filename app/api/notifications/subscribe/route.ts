@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { NextResponse } from 'next/server'
+import { USER_ID } from '@/lib/userId'
 
 async function ensureTable() {
   await db.execute({
@@ -61,7 +62,7 @@ export async function POST(req: Request) {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
         id,
-        'will',
+        USER_ID,
         endpoint,
         p256dh,
         auth,

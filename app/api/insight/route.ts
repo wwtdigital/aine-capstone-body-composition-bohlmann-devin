@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getGoals } from '@/lib/getGoals'
 import { anthropic } from '@/lib/anthropic'
+import { USER_ID } from '@/lib/userId'
 
 export const maxDuration = 30
 
@@ -31,31 +32,31 @@ export async function GET() {
               SELECT date(logged_at/1000,'unixepoch') as day,
                      SUM(total_calories) as total_calories,
                      SUM(total_protein) as total_protein
-              FROM meals WHERE user_id='will' AND logged_at >= ?
+              FROM meals WHERE user_id=? AND logged_at >= ?
               GROUP BY day
             )`,
-      args: [sevenDaysAgo],
+      args: [USER_ID, sevenDaysAgo],
     }),
     db.execute({
       sql: `SELECT COALESCE(SUM(total_calories),0) as cal, COALESCE(SUM(total_protein),0) as prot
-            FROM meals WHERE user_id='will' AND logged_at >= ?`,
-      args: [todayStart],
+            FROM meals WHERE user_id=? AND logged_at >= ?`,
+      args: [USER_ID, todayStart],
     }),
     db.execute({
       sql: `SELECT weight_kg, body_fat_pct, lean_mass_kg, reading_date
-            FROM inbody_readings WHERE user_id='will' ORDER BY reading_date DESC LIMIT 2`,
-      args: [],
+            FROM inbody_readings WHERE user_id=? ORDER BY reading_date DESC LIMIT 2`,
+      args: [USER_ID],
     }),
     db.execute({
       sql: `SELECT date, recovery_score, hrv_ms, rhr, sleep_minutes, sleep_efficiency, strain
-            FROM whoop_daily WHERE user_id='will' ORDER BY date DESC LIMIT 3`,
-      args: [],
+            FROM whoop_daily WHERE user_id=? ORDER BY date DESC LIMIT 3`,
+      args: [USER_ID],
     }),
     db.execute({
       sql: `SELECT session_type, logged_at, notes
-            FROM workout_sessions WHERE user_id='will' AND logged_at >= ?
+            FROM workout_sessions WHERE user_id=? AND logged_at >= ?
             ORDER BY logged_at DESC LIMIT 5`,
-      args: [sevenDaysAgo],
+      args: [USER_ID, sevenDaysAgo],
     }),
   ])
 

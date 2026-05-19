@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { db } from '@/lib/db'
+import { USER_ID } from '@/lib/userId'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -64,13 +65,13 @@ export async function GET(request: NextRequest) {
 
   await db.execute({
     sql: `INSERT INTO whoop_auth (user_id, access_token, refresh_token, expires_at, updated_at)
-          VALUES ('will', ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?)
           ON CONFLICT(user_id) DO UPDATE SET
             access_token = excluded.access_token,
             refresh_token = excluded.refresh_token,
             expires_at = excluded.expires_at,
             updated_at = excluded.updated_at`,
-    args: [tokenData.access_token, tokenData.refresh_token, expiresAt, Date.now()],
+    args: [USER_ID, tokenData.access_token, tokenData.refresh_token, expiresAt, Date.now()],
   })
 
   return NextResponse.redirect(new URL('/settings?whoop=connected', request.url))

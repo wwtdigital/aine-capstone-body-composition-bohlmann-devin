@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { USER_ID } from '@/lib/userId'
 
 export async function GET() {
   const result = await db.execute({
-    sql: `SELECT reading_date, weight_kg, body_fat_pct, lean_mass_kg FROM inbody_readings WHERE user_id = 'will' ORDER BY reading_date ASC`,
-    args: [],
+    sql: `SELECT reading_date, weight_kg, body_fat_pct, lean_mass_kg FROM inbody_readings WHERE user_id = ? ORDER BY reading_date ASC`,
+    args: [USER_ID],
   })
 
   const readings = (result.rows as unknown as {

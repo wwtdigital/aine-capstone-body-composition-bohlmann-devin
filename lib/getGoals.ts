@@ -1,4 +1,5 @@
 import { db } from './db'
+import { USER_ID } from './userId'
 
 export type Goals = {
   target_weight_lbs: number
@@ -26,7 +27,7 @@ export async function getGoals(): Promise<Goals> {
   try {
     const result = await db.execute({
       sql: 'SELECT * FROM goals WHERE user_id = ?',
-      args: ['will'],
+      args: [USER_ID],
     })
     if (result.rows.length === 0) return GOAL_DEFAULTS
     const row = result.rows[0] as any

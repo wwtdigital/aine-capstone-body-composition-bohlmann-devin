@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { whoopFetch } from '@/lib/whoop'
+import { USER_ID } from '@/lib/userId'
 
 export const maxDuration = 60
 
@@ -178,7 +179,7 @@ export async function POST() {
   for (const [date, data] of byDate.entries()) {
     await db.execute({
       sql: `INSERT INTO whoop_daily (id, user_id, date, recovery_score, strain, hrv_ms, rhr, sleep_minutes, sleep_efficiency, raw_json)
-            VALUES (?, 'will', ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(user_id, date) DO UPDATE SET
               recovery_score = excluded.recovery_score,
               strain = excluded.strain,
@@ -189,6 +190,7 @@ export async function POST() {
               raw_json = excluded.raw_json`,
       args: [
         `whoop-${date}`,
+        USER_ID,
         date,
         data.recovery_score ?? null,
         data.strain ?? null,
@@ -219,8 +221,8 @@ export async function POST() {
 
       await db.execute({
         sql: `INSERT OR IGNORE INTO workout_sessions (id, user_id, logged_at, session_type, notes, duration_minutes, source)
-              VALUES (?, 'will', ?, ?, ?, ?, 'whoop')`,
-        args: [`whoop-${w.id}`, loggedAt, sessionType, notes, durationMinutes],
+              VALUES (?, ?, ?, ?, ?, ?, 'whoop')`,
+        args: [`whoop-${w.id}`, USER_ID, loggedAt, sessionType, notes, durationMinutes],
       })
       workoutsUpserted++
     }

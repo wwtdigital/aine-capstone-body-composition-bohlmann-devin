@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { USER_ID } from '@/lib/userId'
 
 const TOKEN_URL = 'https://api.prod.whoop.com/oauth/oauth2/token'
 const API_BASE = 'https://api.prod.whoop.com/developer'
@@ -32,8 +33,8 @@ async function refreshTokens(refreshToken: string): Promise<TokenRow> {
   const expiresAt = Date.now() + data.expires_in * 1000
 
   await db.execute({
-    sql: `UPDATE whoop_auth SET access_token = ?, refresh_token = ?, expires_at = ?, updated_at = ? WHERE user_id = 'will'`,
-    args: [data.access_token, data.refresh_token ?? refreshToken, expiresAt, Date.now()],
+    sql: `UPDATE whoop_auth SET access_token = ?, refresh_token = ?, expires_at = ?, updated_at = ? WHERE user_id = ?`,
+    args: [data.access_token, data.refresh_token ?? refreshToken, expiresAt, Date.now(), USER_ID],
   })
 
   return { access_token: data.access_token, refresh_token: data.refresh_token ?? refreshToken, expires_at: expiresAt }
@@ -41,8 +42,8 @@ async function refreshTokens(refreshToken: string): Promise<TokenRow> {
 
 export async function getWhoopToken(): Promise<string | null> {
   const result = await db.execute({
-    sql: `SELECT access_token, refresh_token, expires_at FROM whoop_auth WHERE user_id = 'will'`,
-    args: [],
+    sql: `SELECT access_token, refresh_token, expires_at FROM whoop_auth WHERE user_id = ?`,
+    args: [USER_ID],
   })
 
   if (!result.rows.length) return null
@@ -74,8 +75,8 @@ export async function whoopFetch(path: string): Promise<unknown> {
 
 export async function isWhoopConnected(): Promise<boolean> {
   const result = await db.execute({
-    sql: `SELECT access_token FROM whoop_auth WHERE user_id = 'will'`,
-    args: [],
+    sql: `SELECT access_token FROM whoop_auth WHERE user_id = ?`,
+    args: [USER_ID],
   })
   return result.rows.length > 0 && !!(result.rows[0] as unknown as { access_token: string }).access_token
 }

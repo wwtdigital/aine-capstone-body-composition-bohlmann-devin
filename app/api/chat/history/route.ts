@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { USER_ID } from '@/lib/userId'
 
 export async function GET(request: NextRequest) {
   const sessionId = request.nextUrl.searchParams.get('sessionId')
@@ -18,8 +19,8 @@ export async function GET(request: NextRequest) {
     })
 
     const result = await db.execute({
-      sql: `SELECT role, content FROM chat_history WHERE user_id = 'will' AND id LIKE ? ORDER BY created_at ASC LIMIT 50`,
-      args: [`${sessionId}%`],
+      sql: `SELECT role, content FROM chat_history WHERE user_id = ? AND id LIKE ? ORDER BY created_at ASC LIMIT 50`,
+      args: [USER_ID, `${sessionId}%`],
     })
 
     const messages = (result.rows as unknown as { role: string; content: string }[]).map(r => ({

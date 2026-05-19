@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
 import { db } from '@/lib/db'
 import { v4 as uuidv4 } from 'uuid'
+import { USER_ID } from '@/lib/userId'
 
 type MealItem = {
   name: string
@@ -74,8 +75,8 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   const result = await db.execute({
-    sql: `SELECT * FROM meals WHERE user_id = 'will' ORDER BY logged_at DESC LIMIT 50`,
-    args: [],
+    sql: `SELECT * FROM meals WHERE user_id = ? ORDER BY logged_at DESC LIMIT 50`,
+    args: [USER_ID],
   })
   return NextResponse.json(result.rows)
 }

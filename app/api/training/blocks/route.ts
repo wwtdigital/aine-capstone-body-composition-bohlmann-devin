@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { USER_ID } from '@/lib/userId'
 
 async function ensureTables() {
   await db.execute({
@@ -26,10 +27,10 @@ export async function GET() {
   const blockResult = await db.execute({
     sql: `SELECT id, name, goal, start_date, end_date, target_strength_days, target_soccer_days
           FROM training_blocks
-          WHERE user_id = 'will' AND start_date <= ? AND end_date >= ?
+          WHERE user_id = ? AND start_date <= ? AND end_date >= ?
           ORDER BY created_at DESC
           LIMIT 1`,
-    args: [today, today],
+    args: [USER_ID, today, today],
   })
 
   const block = blockResult.rows[0]
@@ -49,9 +50,9 @@ export async function GET() {
   const sessionsResult = await db.execute({
     sql: `SELECT id, logged_at, session_type
           FROM workout_sessions
-          WHERE user_id = 'will' AND logged_at >= ?
+          WHERE user_id = ? AND logged_at >= ?
           ORDER BY logged_at ASC`,
-    args: [ninetyDaysAgo],
+    args: [USER_ID, ninetyDaysAgo],
   })
 
   const sessions = sessionsResult.rows.map((r) => ({
@@ -92,8 +93,8 @@ export async function POST(request: NextRequest) {
 
   await db.execute({
     sql: `INSERT INTO training_blocks (id, user_id, name, goal, start_date, end_date, target_strength_days, target_soccer_days, created_at)
-          VALUES (?, 'will', ?, ?, ?, ?, ?, ?, ?)`,
-    args: [id, name, goal ?? null, startDate, endDate, targetStrengthDays ?? 4, targetSoccerDays ?? 2, createdAt],
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [id, USER_ID, name, goal ?? null, startDate, endDate, targetStrengthDays ?? 4, targetSoccerDays ?? 2, createdAt],
   })
 
   return NextResponse.json({ id })

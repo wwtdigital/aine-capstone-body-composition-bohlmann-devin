@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { USER_ID } from '@/lib/userId'
 
 async function ensureTable() {
   await db.execute({
@@ -20,10 +21,10 @@ export async function GET() {
   const result = await db.execute({
     sql: `SELECT scores_json, notes, assessed_at
           FROM muscle_assessments
-          WHERE user_id = 'will'
+          WHERE user_id = ?
           ORDER BY assessed_at DESC
           LIMIT 1`,
-    args: [],
+    args: [USER_ID],
   })
 
   if (result.rows.length === 0) {

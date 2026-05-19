@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { v4 as uuidv4 } from 'uuid'
+import { USER_ID } from '@/lib/userId'
 
 function dateToTimestamp(isoDate: string): number {
   return new Date(isoDate + 'T00:00:00Z').getTime()
@@ -31,8 +32,8 @@ export async function POST(request: NextRequest) {
   const readingDate = dateToTimestamp(body.reading_date)
 
   const existing = await db.execute({
-    sql: `SELECT id FROM inbody_readings WHERE user_id = 'will' AND reading_date = ?`,
-    args: [readingDate],
+    sql: `SELECT id FROM inbody_readings WHERE user_id = ? AND reading_date = ?`,
+    args: [USER_ID, readingDate],
   })
 
   if (existing.rows.length > 0) {
@@ -64,8 +65,8 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   const result = await db.execute({
-    sql: `SELECT * FROM inbody_readings WHERE user_id = 'will' ORDER BY reading_date DESC`,
-    args: [],
+    sql: `SELECT * FROM inbody_readings WHERE user_id = ? ORDER BY reading_date DESC`,
+    args: [USER_ID],
   })
   return NextResponse.json(result.rows)
 }

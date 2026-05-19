@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getGoals } from '@/lib/getGoals'
 import { anthropic } from '@/lib/anthropic'
+import { USER_ID } from '@/lib/userId'
 
 export const maxDuration = 60
 
@@ -19,12 +20,12 @@ export async function GET() {
   const [GOALS, nutritionResult, inbodyResult] = await Promise.all([
     getGoals(),
     db.execute({
-      sql: `SELECT date(logged_at/1000, 'unixepoch') as day, SUM(total_calories) as cal, SUM(total_protein) as prot FROM meals WHERE user_id = 'will' AND logged_at >= ? GROUP BY day ORDER BY day DESC`,
-      args: [fourteenDaysAgo],
+      sql: `SELECT date(logged_at/1000, 'unixepoch') as day, SUM(total_calories) as cal, SUM(total_protein) as prot FROM meals WHERE user_id = ? AND logged_at >= ? GROUP BY day ORDER BY day DESC`,
+      args: [USER_ID, fourteenDaysAgo],
     }),
     db.execute({
-      sql: `SELECT reading_date, weight_kg, body_fat_pct, lean_mass_kg, body_water_kg FROM inbody_readings WHERE user_id = 'will' ORDER BY reading_date DESC LIMIT 3`,
-      args: [],
+      sql: `SELECT reading_date, weight_kg, body_fat_pct, lean_mass_kg, body_water_kg FROM inbody_readings WHERE user_id = ? ORDER BY reading_date DESC LIMIT 3`,
+      args: [USER_ID],
     }),
   ])
 

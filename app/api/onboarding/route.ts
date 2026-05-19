@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { NextResponse } from 'next/server'
+import { USER_ID } from '@/lib/userId'
 
 async function ensureTable() {
   await db.execute(`
@@ -15,7 +16,7 @@ export async function GET() {
   await ensureTable()
   const result = await db.execute({
     sql: 'SELECT onboarding_completed FROM user_settings WHERE user_id = ?',
-    args: ['will'],
+    args: [USER_ID],
   })
   if (result.rows.length > 0 && result.rows[0].onboarding_completed === 1) {
     return NextResponse.json({ completed: true })
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
   await db.execute({
     sql: `INSERT OR REPLACE INTO user_settings (user_id, onboarding_completed, profile_json)
           VALUES (?, 1, ?)`,
-    args: ['will', JSON.stringify(profile)],
+    args: [USER_ID, JSON.stringify(profile)],
   })
   return NextResponse.json({ ok: true })
 }

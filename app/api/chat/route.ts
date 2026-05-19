@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getGoals } from '@/lib/getGoals'
 import { anthropic } from '@/lib/anthropic'
+import { USER_ID } from '@/lib/userId'
 
 export const maxDuration = 45
 
@@ -39,20 +40,20 @@ export async function POST(request: NextRequest) {
   const [GOALS, mealsResult, inbodyResult, historyResult, whoopResult] = await Promise.all([
     getGoals(),
     db.execute({
-      sql: `SELECT date(logged_at/1000, 'unixepoch') as day, ROUND(SUM(total_calories)) as cal, ROUND(SUM(total_protein)) as prot, ROUND(SUM(total_carbs)) as carbs, ROUND(SUM(total_fat)) as fat, COUNT(*) as meals FROM meals WHERE user_id = 'will' AND logged_at >= ? GROUP BY day ORDER BY day DESC`,
-      args: [thirtyDaysAgo],
+      sql: `SELECT date(logged_at/1000, 'unixepoch') as day, ROUND(SUM(total_calories)) as cal, ROUND(SUM(total_protein)) as prot, ROUND(SUM(total_carbs)) as carbs, ROUND(SUM(total_fat)) as fat, COUNT(*) as meals FROM meals WHERE user_id = ? AND logged_at >= ? GROUP BY day ORDER BY day DESC`,
+      args: [USER_ID, thirtyDaysAgo],
     }),
     db.execute({
-      sql: `SELECT reading_date, weight_kg, body_fat_pct, lean_mass_kg FROM inbody_readings WHERE user_id = 'will' ORDER BY reading_date DESC LIMIT 5`,
-      args: [],
+      sql: `SELECT reading_date, weight_kg, body_fat_pct, lean_mass_kg FROM inbody_readings WHERE user_id = ? ORDER BY reading_date DESC LIMIT 5`,
+      args: [USER_ID],
     }),
     db.execute({
-      sql: `SELECT role, content FROM chat_history WHERE user_id = 'will' AND id LIKE ? ORDER BY created_at ASC LIMIT 20`,
-      args: [`${sessionId}%`],
+      sql: `SELECT role, content FROM chat_history WHERE user_id = ? AND id LIKE ? ORDER BY created_at ASC LIMIT 20`,
+      args: [USER_ID, `${sessionId}%`],
     }),
     db.execute({
-      sql: `SELECT recovery_score, strain, hrv_ms, sleep_minutes FROM whoop_daily WHERE user_id = 'will' ORDER BY date DESC LIMIT 1`,
-      args: [],
+      sql: `SELECT recovery_score, strain, hrv_ms, sleep_minutes FROM whoop_daily WHERE user_id = ? ORDER BY date DESC LIMIT 1`,
+      args: [USER_ID],
     }),
   ])
 
@@ -104,8 +105,8 @@ Keep responses concise — 2-4 sentences unless detail is requested. Use his act
   // Save the user message before calling Claude
   const userMsgId = `${sessionId}-${Date.now()}-u`
   await db.execute({
-    sql: `INSERT INTO chat_history (id, user_id, role, content, created_at) VALUES (?, 'will', 'user', ?, ?)`,
-    args: [userMsgId, message.trim(), Date.now()],
+    sql: `INSERT INTO chat_history (id, user_id, role, content, created_at) VALUES (?, ?, 'user', ?, ?)`,
+    args: [userMsgId, USER_ID, message.trim(), Date.now()],
   })
 
   const messages = [
@@ -130,8 +131,8 @@ Keep responses concise — 2-4 sentences unless detail is requested. Use his act
   // Save assistant reply
   const assistantMsgId = `${sessionId}-${Date.now()}-a`
   await db.execute({
-    sql: `INSERT INTO chat_history (id, user_id, role, content, created_at) VALUES (?, 'will', 'assistant', ?, ?)`,
-    args: [assistantMsgId, reply, Date.now()],
+    sql: `INSERT INTO chat_history (id, user_id, role, content, created_at) VALUES (?, ?, 'assistant', ?, ?)`,
+    args: [assistantMsgId, USER_ID, reply, Date.now()],
   })
 
   return NextResponse.json({ reply, sessionId })

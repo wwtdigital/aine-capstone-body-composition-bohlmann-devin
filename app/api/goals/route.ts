@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextResponse } from 'next/server'
 import { GOAL_DEFAULTS } from '@/lib/getGoals'
+import { USER_ID } from '@/lib/userId'
 
 async function ensureTable() {
   await db.execute({
@@ -28,7 +29,7 @@ export async function GET() {
   await ensureTable()
   const result = await db.execute({
     sql: 'SELECT * FROM goals WHERE user_id = ?',
-    args: ['will'],
+    args: [USER_ID],
   })
   if (result.rows.length === 0) {
     return NextResponse.json(GOAL_DEFAULTS)
@@ -55,7 +56,7 @@ export async function PUT(req: Request) {
        daily_calories, daily_protein_g, daily_carbs_g, daily_fat_g, daily_sleep_hours, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     args: [
-      'will',
+      USER_ID,
       body.target_weight_lbs ?? GOAL_DEFAULTS.target_weight_lbs,
       body.target_body_fat_pct ?? GOAL_DEFAULTS.target_body_fat_pct,
       body.target_lean_mass_kg ?? GOAL_DEFAULTS.target_lean_mass_kg,

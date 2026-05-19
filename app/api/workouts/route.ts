@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { USER_ID } from '@/lib/userId'
 
 async function ensureTables() {
   await db.execute({
@@ -51,8 +52,8 @@ export async function POST(request: NextRequest) {
   try {
     await db.execute({
       sql: `INSERT INTO workout_sessions (id, user_id, logged_at, session_type, notes, duration_minutes)
-            VALUES (?, 'will', ?, ?, ?, ?)`,
-      args: [id, loggedAt, sessionType, notes ?? null, durationMinutes ?? null],
+            VALUES (?, ?, ?, ?, ?, ?)`,
+      args: [id, USER_ID, loggedAt, sessionType, notes ?? null, durationMinutes ?? null],
     })
 
     for (const m of (musclesWorked ?? [])) {
@@ -80,9 +81,9 @@ export async function GET(request: NextRequest) {
     const sessionsResult = await db.execute({
       sql: `SELECT id, logged_at, session_type, duration_minutes, notes
             FROM workout_sessions
-            WHERE user_id = 'will' AND logged_at >= ?
+            WHERE user_id = ? AND logged_at >= ?
             ORDER BY logged_at DESC`,
-      args: [since],
+      args: [USER_ID, since],
     })
 
     const sessions = await Promise.all(

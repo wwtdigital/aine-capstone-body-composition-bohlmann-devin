@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { USER_ID } from '@/lib/userId'
 
 export async function GET() {
   try {
@@ -7,9 +8,9 @@ export async function GET() {
       sql: `SELECT wm.muscle_id, MAX(ws.logged_at) as last_trained_at, wm.volume
             FROM workout_muscles wm
             JOIN workout_sessions ws ON ws.id = wm.session_id
-            WHERE ws.user_id = 'will'
+            WHERE ws.user_id = ?
             GROUP BY wm.muscle_id`,
-      args: [],
+      args: [USER_ID],
     })
 
     const data: Record<string, { lastTrainedAt: number; volume: 'low' | 'medium' | 'high' }> = {}

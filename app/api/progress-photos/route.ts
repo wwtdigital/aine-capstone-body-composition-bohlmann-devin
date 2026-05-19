@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { put } from '@vercel/blob'
 import { v4 as uuidv4 } from 'uuid'
+import { USER_ID } from '@/lib/userId'
 
 async function ensureTable() {
   await db.execute({
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
 
   await db.execute({
     sql: `INSERT INTO progress_photos (id, user_id, pose, photo_url, weight_kg, taken_at) VALUES (?, ?, ?, ?, ?, ?)`,
-    args: [id, 'will', body.pose, blob.url, body.weightKg ?? null, takenAt],
+    args: [id, USER_ID, body.pose, blob.url, body.weightKg ?? null, takenAt],
   })
 
   return NextResponse.json({ id, photo_url: blob.url, taken_at: takenAt })
@@ -58,8 +59,8 @@ export async function GET() {
   await ensureTable()
 
   const result = await db.execute({
-    sql: `SELECT id, pose, photo_url, weight_kg, taken_at FROM progress_photos WHERE user_id = 'will' ORDER BY taken_at DESC`,
-    args: [],
+    sql: `SELECT id, pose, photo_url, weight_kg, taken_at FROM progress_photos WHERE user_id = ? ORDER BY taken_at DESC`,
+    args: [USER_ID],
   })
 
   const photos = (result.rows as unknown as {
