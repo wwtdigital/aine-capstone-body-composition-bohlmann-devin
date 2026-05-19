@@ -61,8 +61,12 @@ export default async function Today() {
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 
-  // HRV sparkline values — sorted oldest→newest for left-to-right display
-  const hrvValues = [...whoopWeek].reverse().map(r => r.hrv_ms)
+  const recoveryValues = [...whoopWeek].reverse().map(r => ({ score: r.recovery_score, date: r.date }))
+  const sleepValues = [...whoopWeek].reverse().map(r => r.sleep_minutes)
+  const hrv7DayAvg = (() => {
+    const v = whoopWeek.map(r => r.hrv_ms).filter((x): x is number => x != null)
+    return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null
+  })()
 
   // 7-day adherence: build array for last 7 calendar days
   const calMap: Record<string, number> = {}
@@ -132,12 +136,11 @@ export default async function Today() {
           </Link>
         )}
 
-        {/* Recovery arc + HRV sparkline */}
+        {/* Recovery arc + 7-day recovery bars */}
         <div className="flex items-center gap-3 mb-4">
           <RecoveryArc score={whoop?.recovery_score ?? null} muted={!whoop} />
           <div className="flex-1 min-w-0">
-            <HrvSparkline values={whoop ? hrvValues : [48, 51, 55, 50, 53, 54, 52]} muted={!whoop} />
-            <p className="text-ink3 text-xs mt-1">HRV 7-day trend</p>
+            <RecoveryBars values={whoop ? recoveryValues : null} muted={!whoop} />
             {!whoop && <p className="text-ink4 text-xs mt-1">Demo data — connect Whoop</p>}
           </div>
         </div>
@@ -152,43 +155,53 @@ export default async function Today() {
                 if (mins == null) return '—'
                 return `${Math.floor(mins / 60)}h ${mins % 60}m`
               })(),
+              sub: null as string | null,
             },
             {
               label: 'Efficiency',
               value: whoop
                 ? (whoop.sleep_efficiency != null ? `${Math.round(whoop.sleep_efficiency)}%` : '—')
                 : '87%',
+              sub: null as string | null,
             },
             {
               label: 'HRV',
               value: whoop
                 ? (whoop.hrv_ms != null ? `${Math.round(whoop.hrv_ms)}ms` : '—')
                 : '52ms',
+              sub: (whoop && whoop.hrv_ms != null && hrv7DayAvg != null)
+                ? `${whoop.hrv_ms > hrv7DayAvg ? '+' : ''}${Math.round(whoop.hrv_ms - hrv7DayAvg)} vs 7d`
+                : null,
             },
             {
               label: 'Strain',
               value: whoop
                 ? (whoop.strain != null ? whoop.strain.toFixed(1) : '—')
                 : '11.2',
+              sub: null as string | null,
             },
             {
               label: 'RHR',
               value: whoop
                 ? (whoop.rhr != null ? `${Math.round(whoop.rhr)}bpm` : '—')
                 : '56bpm',
+              sub: null as string | null,
             },
-          ].map(({ label, value }) => (
+          ].map(({ label, value, sub }) => (
             <div key={label}>
               <p className={`font-bold text-sm tabular-nums ${!whoop ? 'text-ink3' : 'text-ink'}`}>{value}</p>
               <p className="text-ink3 text-xs mt-0.5">{label}</p>
+              {sub && (
+                <p className={`text-[10px] mt-0.5 tabular-nums leading-none ${sub.startsWith('+') ? 'text-ok' : 'text-warn'}`}>{sub}</p>
+              )}
             </div>
           ))}
         </div>
 
-        {/* Sleep stages */}
+        {/* 7-day sleep */}
         <div className="mt-3 pt-3 border-t border-line">
-          <p className="eyebrow mb-2">Sleep Stages</p>
-          <SleepStagesBar minutes={whoop?.sleep_minutes ?? (whoop ? null : 432)} muted={!whoop} />
+          <p className="eyebrow mb-2">Sleep</p>
+          <SleepWeekBars values={whoop ? sleepValues : null} muted={!whoop} />
         </div>
       </FramedCard>
 
@@ -455,31 +468,49 @@ function HybridAthleteTip({ dayOfWeek }: { dayOfWeek: number }) {
   )
 }
 
-function HrvSparkline({ values, muted = false }: { values: (number | null)[]; muted?: boolean }) {
-  const valid = values.filter(v => v != null) as number[]
-  if (valid.length < 2) return null
-  const min = Math.min(...valid), max = Math.max(...valid)
-  const range = max - min || 1
-  const points = values
-    .map((v, i) => {
-      const x = (i / (values.length - 1)) * 100
-      const y = v != null ? 32 - ((v - min) / range) * 28 : null
-      return y != null ? `${x},${y}` : null
-    })
-    .filter(Boolean)
-    .join(' ')
+function RecoveryBars({ values, muted = false }: {
+  values: { score: number | null; date: string }[] | null
+  muted?: boolean
+}) {
+  const demo = [
+    { score: 74, date: '' }, { score: 61, date: '' }, { score: 82, date: '' },
+    { score: 45, date: '' }, { score: 78, date: '' }, { score: 65, date: '' }, { score: 70, date: '' },
+  ]
+  const data = values ?? demo
   return (
-    <svg viewBox="0 0 100 32" className={`w-full h-8 ${muted ? 'opacity-40' : ''}`} preserveAspectRatio="none">
-      <polyline
-        points={points}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-brand"
-      />
-    </svg>
+    <div className={muted ? 'opacity-40' : ''}>
+      <div className="flex items-end gap-1 h-10">
+        {data.map((d, i) => {
+          const pct = d.score != null ? d.score / 100 : 0
+          const color = d.score == null ? 'var(--color-surface)'
+            : d.score >= 67 ? '#10b981'
+            : d.score >= 34 ? '#f59e0b'
+            : '#ef4444'
+          const isToday = i === data.length - 1
+          return (
+            <div key={i} className="flex-1 flex flex-col justify-end">
+              <div
+                className="w-full rounded-sm"
+                style={{ height: `${Math.max(10, pct * 100)}%`, backgroundColor: color, opacity: isToday ? 1 : 0.55 }}
+              />
+            </div>
+          )
+        })}
+      </div>
+      <div className="flex gap-1 mt-1">
+        {data.map((d, i) => {
+          const label = d.date
+            ? new Date(d.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'narrow' })
+            : ['M', 'T', 'W', 'T', 'F', 'S', 'S'][i % 7]
+          return (
+            <div key={i} className="flex-1 text-center">
+              <span className="text-ink4 text-[9px]">{label}</span>
+            </div>
+          )
+        })}
+      </div>
+      <p className="text-ink3 text-xs mt-1">Recovery 7-day</p>
+    </div>
   )
 }
 
@@ -534,29 +565,46 @@ function RecoveryArc({ score, muted = false }: { score: number | null; muted?: b
   )
 }
 
-function SleepStagesBar({ minutes, muted = false }: { minutes: number | null; muted?: boolean }) {
-  const total = minutes ?? 432
-  const stages = [
-    { label: 'Awake', pct: 0.05, color: '#475569' },
-    { label: 'Light', pct: 0.50, color: '#3b82f6' },
-    { label: 'Deep',  pct: 0.20, color: '#6366f1' },
-    { label: 'REM',   pct: 0.25, color: '#8b5cf6' },
-  ]
-  const fmt = (m: number) => `${Math.floor(m / 60)}h ${Math.round(m % 60)}m`
+function SleepWeekBars({ values, muted = false }: {
+  values: (number | null)[] | null
+  muted?: boolean
+}) {
+  const demo = [432, 445, 418, 460, 390, 475, 450]
+  const data = values ?? demo
+  const maxMins = Math.max(...(data.filter((v): v is number => v != null)), 480)
+  const fmt = (m: number) => `${Math.floor(m / 60)}h ${m % 60}m`
   return (
     <div className={muted ? 'opacity-50' : ''}>
-      <div className="flex rounded-full overflow-hidden h-2.5 mb-2">
-        {stages.map(s => (
-          <div key={s.label} style={{ width: `${s.pct * 100}%`, backgroundColor: s.color }} />
-        ))}
+      <div className="flex items-end gap-1 h-10">
+        {data.map((mins, i) => {
+          const pct = mins != null ? mins / maxMins : 0
+          const isToday = i === data.length - 1
+          return (
+            <div key={i} className="flex-1 flex flex-col justify-end">
+              <div
+                className="w-full rounded-sm"
+                style={{ height: `${Math.max(10, pct * 100)}%`, backgroundColor: isToday ? '#6366f1' : '#475569', opacity: isToday ? 1 : 0.5 }}
+              />
+            </div>
+          )
+        })}
       </div>
-      <div className="flex gap-4 flex-wrap">
-        {stages.map(s => (
-          <div key={s.label} className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
-            <span className="text-ink3 text-xs">{s.label} {fmt(total * s.pct)}</span>
-          </div>
-        ))}
+      <div className="flex gap-1 mt-1">
+        {data.map((_, i) => {
+          const daysAgo = data.length - 1 - i
+          const label = new Date(Date.now() - daysAgo * 86400000).toLocaleDateString('en-US', { weekday: 'narrow' })
+          return (
+            <div key={i} className="flex-1 text-center">
+              <span className="text-ink4 text-[9px]">{label}</span>
+            </div>
+          )
+        })}
+      </div>
+      <div className="flex justify-between mt-1">
+        <p className="text-ink3 text-xs">Sleep 7-day</p>
+        {data[data.length - 1] != null && (
+          <p className="text-ink3 text-xs tabular-nums">{fmt(data[data.length - 1]!)}</p>
+        )}
       </div>
     </div>
   )
