@@ -4,6 +4,32 @@ import { whoopFetch } from '@/lib/whoop'
 
 export const maxDuration = 60
 
+type WorkoutRecord = {
+  id: number
+  start: string
+  end: string
+  sport_id: number
+  sport_name?: string
+  score_state?: string
+  score?: {
+    strain?: number
+    average_heart_rate?: number
+    kilojoule?: number
+  }
+}
+
+// Maps Whoop sport IDs to our session_type values
+const SPORT_MAP: Record<number, string> = {
+  44: 'Strength', 64: 'Strength', 49: 'Strength', 63: 'Strength',
+  71: 'Soccer', 29: 'Soccer',
+  1: 'Cardio', 46: 'Cardio', 167: 'Cardio', 58: 'Cardio', 165: 'Cardio',
+  68: 'Cardio', 169: 'Cardio', 170: 'Cardio',
+}
+
+function sportToSessionType(sportId: number): string {
+  return SPORT_MAP[sportId] ?? 'Other'
+}
+
 // Whoop v2 types — recovery fields are top-level, not nested in score
 type RecoveryRecord = {
   cycle_id: number
@@ -48,18 +74,37 @@ function toDateStr(iso: string): string {
   return iso.split('T')[0]
 }
 
+async function ensureWorkoutColumns() {
+  await db.execute({
+    sql: `CREATE TABLE IF NOT EXISTS workout_sessions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      logged_at INTEGER NOT NULL,
+      session_type TEXT NOT NULL,
+      notes TEXT,
+      duration_minutes INTEGER
+    )`,
+    args: [],
+  })
+  // Add source column if not present — SQLite has no ADD COLUMN IF NOT EXISTS
+  try {
+    await db.execute({ sql: `ALTER TABLE workout_sessions ADD COLUMN source TEXT DEFAULT 'manual'`, args: [] })
+  } catch { /* already exists */ }
+}
+
 export async function POST() {
   const start = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
   const end = new Date().toISOString()
 
-  const [recoveryRes, cycleRes, sleepRes] = await Promise.allSettled([
+  const [recoveryRes, cycleRes, sleepRes, workoutRes] = await Promise.allSettled([
     whoopFetch(`/v2/recovery?limit=25&start=${start}&end=${end}`) as Promise<{ records: RecoveryRecord[] }>,
     whoopFetch(`/v2/cycle?limit=25&start=${start}&end=${end}`) as Promise<{ records: CycleRecord[] }>,
     whoopFetch(`/v2/activity/sleep?limit=25&start=${start}&end=${end}`) as Promise<{ records: SleepRecord[] }>,
+    whoopFetch(`/v2/activity/workout?limit=25&start=${start}&end=${end}`) as Promise<{ records: WorkoutRecord[] }>,
   ])
 
-  // If all three failed, bail out
-  if (recoveryRes.status === 'rejected' && cycleRes.status === 'rejected' && sleepRes.status === 'rejected') {
+  // If all four failed, bail out
+  if (recoveryRes.status === 'rejected' && cycleRes.status === 'rejected' && sleepRes.status === 'rejected' && workoutRes.status === 'rejected') {
     const msg = recoveryRes.reason instanceof Error ? recoveryRes.reason.message : 'Sync failed'
     console.error('All Whoop endpoints failed:', msg)
     if (msg.includes('not connected')) return NextResponse.json({ error: 'Whoop not connected' }, { status: 401 })
@@ -69,10 +114,12 @@ export async function POST() {
   const recoveryRecords = recoveryRes.status === 'fulfilled' ? (recoveryRes.value.records ?? []) : []
   const cycleRecords = cycleRes.status === 'fulfilled' ? (cycleRes.value.records ?? []) : []
   const sleepRecords = sleepRes.status === 'fulfilled' ? (sleepRes.value.records ?? []) : []
+  const workoutRecords = workoutRes.status === 'fulfilled' ? (workoutRes.value.records ?? []) : []
 
   if (recoveryRes.status === 'rejected') console.warn('Whoop recovery fetch failed:', recoveryRes.reason)
   if (cycleRes.status === 'rejected') console.warn('Whoop cycle fetch failed:', cycleRes.reason)
   if (sleepRes.status === 'rejected') console.warn('Whoop sleep fetch failed:', sleepRes.reason)
+  if (workoutRes.status === 'rejected') console.warn('Whoop workout fetch failed:', workoutRes.reason)
 
   const byDate = new Map<string, {
     recovery_score?: number
@@ -155,5 +202,33 @@ export async function POST() {
     upserted++
   }
 
-  return NextResponse.json({ synced: upserted, dates: [...byDate.keys()].sort() })
+  // Upsert workouts
+  let workoutsUpserted = 0
+  if (workoutRecords.length > 0) {
+    await ensureWorkoutColumns()
+    for (const w of workoutRecords) {
+      if (w.score_state && w.score_state !== 'SCORED') continue
+      const loggedAt = new Date(w.start).getTime()
+      if (isNaN(loggedAt)) continue
+      const durationMinutes = w.end
+        ? Math.round((new Date(w.end).getTime() - loggedAt) / 60000)
+        : null
+      const sessionType = sportToSessionType(w.sport_id)
+      const sportLabel = w.sport_name ?? `Sport ${w.sport_id}`
+      const notes = sessionType === 'Other' ? sportLabel : null
+
+      await db.execute({
+        sql: `INSERT OR IGNORE INTO workout_sessions (id, user_id, logged_at, session_type, notes, duration_minutes, source)
+              VALUES (?, 'will', ?, ?, ?, ?, 'whoop')`,
+        args: [`whoop-${w.id}`, loggedAt, sessionType, notes, durationMinutes],
+      })
+      workoutsUpserted++
+    }
+  }
+
+  return NextResponse.json({
+    synced: upserted,
+    workouts: workoutsUpserted,
+    dates: [...byDate.keys()].sort(),
+  })
 }
