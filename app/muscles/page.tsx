@@ -51,7 +51,6 @@ const HEX_WARN    = '#f59e0b'
 const HEX_BAD     = '#ef4444'
 const HEX_BRAND   = '#4a9eff'
 const HEX_INK3    = '#64748b'
-const HEX_SURFACE = '#1a2030'
 
 function recoveryColor(m: Muscle): string {
   const pct = recoveryPct(m)
@@ -87,11 +86,11 @@ function MuscleEllipse({ cx, cy, rx, ry, color, selected, onClick }: EllipseProp
     <ellipse
       cx={cx} cy={cy} rx={rx} ry={ry}
       fill={color}
-      fillOpacity={selected ? 0.85 : 0.55}
+      fillOpacity={selected ? 0.9 : 0.72}
       stroke={selected ? '#ffffff' : color}
-      strokeWidth={selected ? 2.5 : 0.5}
-      strokeOpacity={selected ? 1 : 0.6}
-      style={{ cursor: 'pointer', filter: selected ? `drop-shadow(0 0 6px ${color})` : undefined }}
+      strokeWidth={selected ? 2 : 0.8}
+      strokeOpacity={selected ? 1 : 0.5}
+      style={{ cursor: 'pointer', filter: selected ? `drop-shadow(0 0 5px ${color})` : undefined }}
       onClick={onClick}
     />
   )
@@ -115,26 +114,26 @@ function BodyDiagram({ region, muscles, tab, selectedId, onSelect }: BodyDiagram
   const click = (id: string) => () => onSelect(id)
 
   return (
-    <svg viewBox="0 0 200 388" className="w-full h-full" aria-label={`${region} body diagram`}>
+    <svg viewBox="0 0 200 388" width="200" height="388" className="w-full block" style={{ height: 'auto' }} aria-label={`${region} body diagram`}>
       {/* ── Body silhouette ── */}
       {/* Head */}
-      <circle cx={100} cy={40} r={28} fill={HEX_SURFACE} opacity={0.8} />
+      <circle cx={100} cy={40} r={28} style={{ fill: 'var(--color-surface)', opacity: 0.9 }} />
       {/* Neck */}
-      <rect x={88} y={65} width={24} height={20} rx={4} fill={HEX_SURFACE} opacity={0.8} />
+      <rect x={88} y={65} width={24} height={20} rx={4} style={{ fill: 'var(--color-surface)', opacity: 0.9 }} />
       {/* Torso */}
-      <rect x={58} y={83} width={84} height={155} rx={12} fill={HEX_SURFACE} opacity={0.8} />
+      <rect x={58} y={83} width={84} height={155} rx={12} style={{ fill: 'var(--color-surface)', opacity: 0.9 }} />
       {/* Upper arms */}
-      <rect x={30} y={88} width={22} height={80} rx={10} fill={HEX_SURFACE} opacity={0.8} />
-      <rect x={148} y={88} width={22} height={80} rx={10} fill={HEX_SURFACE} opacity={0.8} />
+      <rect x={30} y={88} width={22} height={80} rx={10} style={{ fill: 'var(--color-surface)', opacity: 0.9 }} />
+      <rect x={148} y={88} width={22} height={80} rx={10} style={{ fill: 'var(--color-surface)', opacity: 0.9 }} />
       {/* Forearms */}
-      <rect x={34} y={168} width={18} height={70} rx={8} fill={HEX_SURFACE} opacity={0.8} />
-      <rect x={148} y={168} width={18} height={70} rx={8} fill={HEX_SURFACE} opacity={0.8} />
+      <rect x={34} y={168} width={18} height={70} rx={8} style={{ fill: 'var(--color-surface)', opacity: 0.9 }} />
+      <rect x={148} y={168} width={18} height={70} rx={8} style={{ fill: 'var(--color-surface)', opacity: 0.9 }} />
       {/* Thighs */}
-      <rect x={62} y={238} width={34} height={90} rx={12} fill={HEX_SURFACE} opacity={0.8} />
-      <rect x={104} y={238} width={34} height={90} rx={12} fill={HEX_SURFACE} opacity={0.8} />
+      <rect x={62} y={238} width={34} height={90} rx={12} style={{ fill: 'var(--color-surface)', opacity: 0.9 }} />
+      <rect x={104} y={238} width={34} height={90} rx={12} style={{ fill: 'var(--color-surface)', opacity: 0.9 }} />
       {/* Shins */}
-      <rect x={65} y={328} width={28} height={60} rx={10} fill={HEX_SURFACE} opacity={0.8} />
-      <rect x={107} y={328} width={28} height={60} rx={10} fill={HEX_SURFACE} opacity={0.8} />
+      <rect x={65} y={328} width={28} height={60} rx={10} style={{ fill: 'var(--color-surface)', opacity: 0.9 }} />
+      <rect x={107} y={328} width={28} height={60} rx={10} style={{ fill: 'var(--color-surface)', opacity: 0.9 }} />
 
       {/* ── Muscle regions ── */}
       {region === 'front' && (
