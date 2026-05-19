@@ -22,6 +22,7 @@ type Workout = {
   session_type: string
   duration_minutes: number | null
   notes: string | null
+  strain: number | null
   muscles: { muscle_id: string; volume: string }[]
 }
 
@@ -379,12 +380,17 @@ export default function HistoryPage() {
                     <div>
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${sessionColor}`}>
                               {w.session_type}
                             </span>
                             {w.duration_minutes != null && (
                               <span className="text-ink3 text-xs">{w.duration_minutes} min</span>
+                            )}
+                            {w.strain != null && (
+                              <span className="text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400">
+                                {w.strain.toFixed(1)} strain
+                              </span>
                             )}
                           </div>
                           <p className="text-ink3 text-xs">{dateLabel} · {time}</p>

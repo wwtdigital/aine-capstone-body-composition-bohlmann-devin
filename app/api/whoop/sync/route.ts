@@ -27,8 +27,18 @@ const SPORT_MAP: Record<number, string> = {
   68: 'Cardio', 169: 'Cardio', 170: 'Cardio',
 }
 
-function sportToSessionType(sportId: number): string {
-  return SPORT_MAP[sportId] ?? 'Other'
+function sportNameToSessionType(name: string): string {
+  const n = name.toLowerCase()
+  if (['weight', 'lift', 'strength', 'power', 'functional'].some(k => n.includes(k))) return 'Strength'
+  if (['soccer', 'football'].some(k => n.includes(k))) return 'Soccer'
+  if (['run', 'cycl', 'bike', 'cardio', 'assault', 'row', 'swim', 'elliptical', 'stair', 'hike'].some(k => n.includes(k))) return 'Cardio'
+  return 'Other'
+}
+
+function sportToSessionType(sportId: number, sportName?: string): string {
+  if (SPORT_MAP[sportId]) return SPORT_MAP[sportId]
+  if (sportName) return sportNameToSessionType(sportName)
+  return 'Other'
 }
 
 // Whoop v2 types — recovery fields are top-level, not nested in score
@@ -87,10 +97,12 @@ async function ensureWorkoutColumns() {
     )`,
     args: [],
   })
-  // Add source column if not present — SQLite has no ADD COLUMN IF NOT EXISTS
-  try {
-    await db.execute({ sql: `ALTER TABLE workout_sessions ADD COLUMN source TEXT DEFAULT 'manual'`, args: [] })
-  } catch { /* already exists */ }
+  for (const ddl of [
+    `ALTER TABLE workout_sessions ADD COLUMN source TEXT DEFAULT 'manual'`,
+    `ALTER TABLE workout_sessions ADD COLUMN strain REAL`,
+  ]) {
+    try { await db.execute({ sql: ddl, args: [] }) } catch { /* already exists */ }
+  }
 }
 
 export async function POST() {
@@ -215,14 +227,18 @@ export async function POST() {
       const durationMinutes = w.end
         ? Math.round((new Date(w.end).getTime() - loggedAt) / 60000)
         : null
-      const sessionType = sportToSessionType(w.sport_id)
-      const sportLabel = w.sport_name ?? `Sport ${w.sport_id}`
-      const notes = sessionType === 'Other' ? sportLabel : null
+      const sessionType = sportToSessionType(w.sport_id, w.sport_name)
+      const sportLabel = (w.sport_name ?? `Sport ${w.sport_id}`).toLowerCase()
+      const strain = w.score?.strain ?? null
 
       await db.execute({
-        sql: `INSERT OR IGNORE INTO workout_sessions (id, user_id, logged_at, session_type, notes, duration_minutes, source)
-              VALUES (?, ?, ?, ?, ?, ?, 'whoop')`,
-        args: [`whoop-${w.id}`, USER_ID, loggedAt, sessionType, notes, durationMinutes],
+        sql: `INSERT INTO workout_sessions (id, user_id, logged_at, session_type, notes, duration_minutes, source, strain)
+              VALUES (?, ?, ?, ?, ?, ?, 'whoop', ?)
+              ON CONFLICT(id) DO UPDATE SET
+                session_type = excluded.session_type,
+                duration_minutes = excluded.duration_minutes,
+                strain = excluded.strain`,
+        args: [`whoop-${w.id}`, USER_ID, loggedAt, sessionType, sportLabel, durationMinutes, strain],
       })
       workoutsUpserted++
     }

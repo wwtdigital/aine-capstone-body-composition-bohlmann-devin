@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const sessionsResult = await db.execute({
-      sql: `SELECT id, logged_at, session_type, duration_minutes, notes
+      sql: `SELECT id, logged_at, session_type, duration_minutes, notes, strain
             FROM workout_sessions
             WHERE user_id = ? AND logged_at >= ?
             ORDER BY logged_at DESC`,
@@ -98,6 +98,7 @@ export async function GET(request: NextRequest) {
           session_type: row.session_type as string,
           duration_minutes: row.duration_minutes as number | null,
           notes: row.notes as string | null,
+          strain: row.strain as number | null,
           muscles: musclesResult.rows.map((m) => ({
             muscle_id: m.muscle_id as string,
             volume: m.volume as string,
