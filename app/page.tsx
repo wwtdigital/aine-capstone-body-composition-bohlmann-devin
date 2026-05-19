@@ -4,7 +4,7 @@ import Link from 'next/link'
 import MacroRing from '@/components/MacroRing'
 import MealList from '@/components/MealSheet'
 import DailyInsight from '@/components/DailyInsight'
-import { Dumbbell } from 'lucide-react'
+import { Dumbbell, AlertTriangle, CheckCircle, AlertCircle } from 'lucide-react'
 import FramedCard from '@/components/FramedCard'
 import ISymbol from '@/components/ISymbol'
 
@@ -12,8 +12,10 @@ export const revalidate = 0
 
 type NutritionRow = { cal: number; prot: number; carbs: number; fat: number }
 type InBodyRow = { reading_date: number; weight_kg: number | null; body_fat_pct: number | null; lean_mass_kg: number | null }
-type MealRow = { id: string; logged_at: number; total_calories: number; total_protein: number; items_json: string; photo_url: string | null }
+type MealRow = { id: string; logged_at: number; total_calories: number; total_protein: number; total_carbs: number; items_json: string; photo_url: string | null }
 type WhoopRow = { date: string; recovery_score: number | null; strain: number | null; hrv_ms: number | null; rhr: number | null; sleep_minutes: number | null; sleep_efficiency: number | null }
+type TodayWorkoutRow = { logged_at: number; session_type: string }
+type MealFlag = { type: 'ok' | 'warn' | 'bad'; label: string; detail: string }
 type WhoopWeekRow = { date: string; hrv_ms: number | null; recovery_score: number | null; sleep_minutes: number | null; sleep_efficiency: number | null }
 type WeekNutritionRow = { day: string; cal: number }
 
@@ -24,7 +26,7 @@ export default async function Today() {
   const todayStr = new Date().toISOString().split('T')[0]
   const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0]
 
-  const [GOALS, nutritionResult, inbodyResult, mealsResult, whoopResult, whoopWeekResult, weekNutritionResult] = await Promise.all([
+  const [GOALS, nutritionResult, inbodyResult, mealsResult, whoopResult, whoopWeekResult, weekNutritionResult, todayWorkoutsResult] = await Promise.all([
     getGoals(),
     db.execute({
       sql: `SELECT COALESCE(SUM(total_calories),0) as cal, COALESCE(SUM(total_protein),0) as prot, COALESCE(SUM(total_carbs),0) as carbs, COALESCE(SUM(total_fat),0) as fat FROM meals WHERE user_id = 'will' AND logged_at >= ?`,
@@ -35,7 +37,7 @@ export default async function Today() {
       args: [],
     }),
     db.execute({
-      sql: `SELECT id, logged_at, total_calories, total_protein, items_json, photo_url FROM meals WHERE user_id = 'will' AND logged_at >= ? ORDER BY logged_at DESC LIMIT 8`,
+      sql: `SELECT id, logged_at, total_calories, total_protein, total_carbs, items_json, photo_url FROM meals WHERE user_id = 'will' AND logged_at >= ? ORDER BY logged_at DESC LIMIT 8`,
       args: [todayStart],
     }),
     db.execute({
@@ -50,6 +52,10 @@ export default async function Today() {
       sql: `SELECT date(logged_at/1000, 'unixepoch') as day, ROUND(SUM(total_calories)) as cal FROM meals WHERE user_id = 'will' AND logged_at >= ? GROUP BY day`,
       args: [Date.now() - 7 * 24 * 60 * 60 * 1000],
     }),
+    db.execute({
+      sql: `SELECT logged_at, session_type FROM workout_sessions WHERE user_id = 'will' AND logged_at >= ? ORDER BY logged_at ASC`,
+      args: [todayStart],
+    }).catch(() => ({ rows: [] })),
   ])
 
   const n = nutritionResult.rows[0] as unknown as NutritionRow
@@ -58,6 +64,7 @@ export default async function Today() {
   const whoop = whoopResult.rows[0] as unknown as WhoopRow | undefined
   const whoopWeek = whoopWeekResult.rows as unknown as WhoopWeekRow[]
   const weekNutrition = weekNutritionResult.rows as unknown as WeekNutritionRow[]
+  const todayWorkouts = (todayWorkoutsResult as unknown as { rows: TodayWorkoutRow[] }).rows
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 
@@ -81,6 +88,15 @@ export default async function Today() {
     const pct = cal / GOALS.daily_calories
     const color = pct >= 0.9 ? 'bg-ok' : pct >= 0.5 ? 'bg-warn' : 'bg-surface'
     return { key, initial, color }
+  })
+
+  const mealFlags = computeMealFlags({
+    meals,
+    workouts: todayWorkouts,
+    strain: whoop?.strain ?? null,
+    recovery: whoop?.recovery_score ?? null,
+    totalCal: Number(n.cal),
+    calGoal: GOALS.daily_calories,
   })
 
   // Streak: consecutive days from today with any meals logged
@@ -360,6 +376,12 @@ export default async function Today() {
             <Link href="/log" className="text-xs font-semibold text-brand">Log meal ›</Link>
           </div>
         </div>
+
+        {mealFlags.length > 0 && (
+          <div className="space-y-1.5 mb-3">
+            {mealFlags.map((f, i) => <MealFlagChip key={i} flag={f} />)}
+          </div>
+        )}
 
         {meals.length === 0 ? (
           <div className="bg-card rounded-2xl border border-line p-6 text-center">
@@ -665,6 +687,82 @@ function SleepWeekBars({ values, muted = false }: {
         {data[data.length - 1] != null && (
           <p className="text-ink3 text-xs tabular-nums">{fmt(data[data.length - 1]!)}</p>
         )}
+      </div>
+    </div>
+  )
+}
+
+function computeMealFlags({
+  meals, workouts, strain, recovery: _recovery, totalCal, calGoal,
+}: {
+  meals: MealRow[]
+  workouts: TodayWorkoutRow[]
+  strain: number | null
+  recovery: number | null
+  totalCal: number
+  calGoal: number
+}): MealFlag[] {
+  const flags: MealFlag[] = []
+  const sorted = [...meals].sort((a, b) => a.logged_at - b.logged_at)
+  const H = 3600000
+
+  // Protein spike >50g single sitting
+  for (const m of sorted) {
+    const prot = Number(m.total_protein)
+    if (prot > 50) {
+      const time = new Date(m.logged_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      flags.push({ type: 'warn', label: `${Math.round(prot)}g protein at ${time}`, detail: 'MPS plateaus above ~50g — split across two meals for better utilization' })
+    }
+  }
+
+  // Protein gap >5h between consecutive meals
+  for (let i = 1; i < sorted.length; i++) {
+    const gap = sorted[i].logged_at - sorted[i - 1].logged_at
+    if (gap > 5 * H) {
+      flags.push({ type: 'warn', label: `${(gap / H).toFixed(1)}h without protein`, detail: 'Leucine threshold resets after ~5h — add a meal or shake to maintain MPS' })
+    }
+  }
+
+  // Per-workout: pre-carbs + post-protein
+  for (const w of workouts) {
+    const preMeals = sorted.filter(m => m.logged_at >= w.logged_at - 2 * H && m.logged_at < w.logged_at)
+    const preCarbs = preMeals.reduce((s, m) => s + Number(m.total_carbs ?? 0), 0)
+    const elapsed = Date.now() - w.logged_at
+    const postMeals = sorted.filter(m => m.logged_at > w.logged_at && m.logged_at <= w.logged_at + H)
+    const postProt = postMeals.reduce((s, m) => s + Number(m.total_protein), 0)
+    const tooSoon = elapsed < 30 * 60000
+
+    if (preCarbs < 30) {
+      flags.push({ type: 'warn', label: `Low pre-${w.session_type} carbs`, detail: `${Math.round(preCarbs)}g in 2h window — target ≥30g to top up glycogen` })
+    }
+    if (!tooSoon && postProt < 25) {
+      flags.push({ type: 'warn', label: `Post-${w.session_type} protein missing`, detail: `${Math.round(postProt)}g in 1h window — get ≥25g within the hour to start recovery` })
+    }
+    if (preCarbs >= 30 && (tooSoon || postProt >= 25)) {
+      flags.push({ type: 'ok', label: `${w.session_type} — well fueled`, detail: `${Math.round(preCarbs)}g pre carbs${!tooSoon ? ` · ${Math.round(postProt)}g post protein` : ''}` })
+    }
+  }
+
+  // High strain, under-fueled
+  if (strain != null && strain > 15 && meals.length > 0 && totalCal / calGoal < 0.8) {
+    flags.push({ type: 'bad', label: `High strain (${strain.toFixed(1)}) — fuel up`, detail: `Only ${Math.round((totalCal / calGoal) * 100)}% of calories — under-eating on a high-strain day delays recovery` })
+  }
+
+  return flags.slice(0, 5)
+}
+
+function MealFlagChip({ flag }: { flag: MealFlag }) {
+  const cfg = {
+    ok: { bg: 'bg-ok/10 border-ok/20', text: 'text-ok', Icon: CheckCircle },
+    warn: { bg: 'bg-warn/10 border-warn/20', text: 'text-warn', Icon: AlertTriangle },
+    bad: { bg: 'bg-bad/10 border-bad/20', text: 'text-bad', Icon: AlertCircle },
+  }[flag.type]
+  return (
+    <div className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 ${cfg.bg}`}>
+      <cfg.Icon size={13} className={`shrink-0 mt-0.5 ${cfg.text}`} />
+      <div>
+        <p className={`text-xs font-semibold leading-snug ${cfg.text}`}>{flag.label}</p>
+        <p className="text-ink4 text-xs mt-0.5 leading-snug">{flag.detail}</p>
       </div>
     </div>
   )
