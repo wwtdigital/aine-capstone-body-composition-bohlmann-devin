@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Pencil, Trash2, Check, X, ChevronDown, ChevronUp } from 'lucide-react'
+import { Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Share2, Loader2 } from 'lucide-react'
 import FramedCard from '@/components/FramedCard'
 
 type Meal = {
@@ -71,6 +71,8 @@ export default function HistoryPage() {
   const [editingMealId, setEditingMealId] = useState<string | null>(null)
   const [editMacros, setEditMacros] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 })
   const [deletingMealId, setDeletingMealId] = useState<string | null>(null)
+
+  const [sharing, setSharing] = useState(false)
 
   const [workouts, setWorkouts] = useState<Workout[]>([])
   const [workoutsLoading, setWorkoutsLoading] = useState(true)
@@ -170,13 +172,50 @@ export default function HistoryPage() {
     }
   }
 
+  async function shareWeeklyCard() {
+    setSharing(true)
+    try {
+      const res = await fetch('/api/share/weekly-card')
+      if (!res.ok) return
+      const blob = await res.blob()
+      const file = new File([blob], 'frame-weekly.png', { type: 'image/png' })
+      if (typeof navigator !== 'undefined' && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'My Week on Frame' })
+      } else {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'frame-weekly.png'
+        a.click()
+        URL.revokeObjectURL(url)
+      }
+    } finally {
+      setSharing(false)
+    }
+  }
+
   const mealDays = groupMealsByDay(meals)
 
   return (
     <div className="min-h-screen bg-page pb-24">
       <div className="px-4 pt-12 pb-4">
-        <h1 className="text-2xl font-bold text-ink tracking-tight">History</h1>
-        <p className="text-ink3 text-sm">Last 90 days</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-ink tracking-tight">History</h1>
+            <p className="text-ink3 text-sm">Last 90 days</p>
+          </div>
+          <button
+            onClick={shareWeeklyCard}
+            disabled={sharing}
+            className="flex items-center gap-1.5 bg-surface border border-line text-ink3 text-xs font-semibold px-3 py-2 rounded-full active:scale-95 transition-transform disabled:opacity-40 mt-1"
+          >
+            {sharing
+              ? <Loader2 size={13} className="animate-spin" />
+              : <Share2 size={13} />
+            }
+            Share week
+          </button>
+        </div>
       </div>
 
       {/* Tab toggle */}
