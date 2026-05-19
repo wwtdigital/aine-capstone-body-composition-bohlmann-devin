@@ -1,31 +1,31 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { getSessionToken, SESSION_COOKIE } from '@/lib/session'
 
-const PUBLIC_PREFIXES = [
-  '/login',
-  '/onboarding',
-  '/api/auth/login',
-  '/api/auth/check',
-  '/api/whoop/callback',
-  '/favicon.ico',
-  '/manifest.json',
-  '/icons',
-  '/apple-touch-icon',
-  '/sw.js',
-]
+const PUBLIC_EXACT = new Set(['/login', '/api/auth/login', '/api/auth/check'])
+const PUBLIC_PREFIX = ['/_next', '/favicon', '/icon', '/icons', '/apple-touch-icon', '/sw.js']
+const PUBLIC_FILES = new Set(['/manifest.json', '/robots.txt'])
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  if (PUBLIC_PREFIXES.some(p => pathname.startsWith(p))) {
+  if (
+    PUBLIC_EXACT.has(pathname) ||
+    PUBLIC_FILES.has(pathname) ||
+    PUBLIC_PREFIX.some(p => pathname.startsWith(p))
+  ) {
     return NextResponse.next()
   }
 
-  const session = request.cookies.get('bcc_session')
-  if (session?.value !== process.env.APP_PASSWORD) {
-    const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('next', pathname)
-    return NextResponse.redirect(loginUrl)
+  const session = request.cookies.get(SESSION_COOKIE)?.value
+  const expected = await getSessionToken()
+
+  if (!session || session !== expected) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    const url = new URL('/login', request.url)
+    if (pathname !== '/') url.searchParams.set('next', pathname)
+    return NextResponse.redirect(url)
   }
 
   return NextResponse.next()
