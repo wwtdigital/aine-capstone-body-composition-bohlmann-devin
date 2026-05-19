@@ -91,11 +91,21 @@ export default async function Today() {
     <div className="min-h-screen bg-page pb-24">
 
       {/* Section 1: Header */}
-      <div className="flex items-center justify-between px-4 pt-12 pb-2">
-        <div>
-          <h1 className="text-3xl font-semibold text-ink tracking-tight">Today</h1>
-          <p className="text-ink4 text-sm mt-0.5">{today}</p>
+      <div className="px-4 pt-10 pb-2">
+        {/* Brand mark */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-1.5">
+            <ISymbol size={13} className="text-brand" />
+            <span className="text-brand font-semibold text-xs tracking-[0.12em] uppercase">Frame</span>
+          </div>
+          {streak > 0 && (
+            <div className="flex items-center gap-1.5 bg-brand/10 border border-brand/20 rounded-full px-3 py-1">
+              <span className="text-brand text-xs font-semibold">{streak}-day streak</span>
+            </div>
+          )}
         </div>
+        <h1 className="text-3xl font-semibold text-ink tracking-tight">Today</h1>
+        <p className="text-ink4 text-sm mt-0.5">{today}</p>
       </div>
 
       {/* AI Daily Insight — top of page, most actionable info first */}
