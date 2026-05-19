@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { getGoals } from '@/lib/getGoals'
 import { anthropic } from '@/lib/anthropic'
 import { USER_ID } from '@/lib/userId'
+import { getPersonalContext } from '@/lib/getPersonalContext'
 
 export const maxDuration = 45
 
@@ -37,8 +38,9 @@ export async function POST(request: NextRequest) {
 
   const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
 
-  const [GOALS, mealsResult, inbodyResult, historyResult, whoopResult] = await Promise.all([
+  const [GOALS, personalContext, mealsResult, inbodyResult, historyResult, whoopResult] = await Promise.all([
     getGoals(),
+    getPersonalContext(),
     db.execute({
       sql: `SELECT date(logged_at/1000, 'unixepoch') as day, ROUND(SUM(total_calories)) as cal, ROUND(SUM(total_protein)) as prot, ROUND(SUM(total_carbs)) as carbs, ROUND(SUM(total_fat)) as fat, COUNT(*) as meals FROM meals WHERE user_id = ? AND logged_at >= ? GROUP BY day ORDER BY day DESC`,
       args: [USER_ID, thirtyDaysAgo],
@@ -84,7 +86,7 @@ export async function POST(request: NextRequest) {
 Will is a hybrid athlete: 5x lifting + 3x soccer per week. Tailor advice to that training load.
 
 You have memory of this conversation across sessions. Reference previous exchanges when relevant.
-
+${personalContext ? `\nPERSONAL CONTEXT (medications, supplements, habits, history — treat as ground truth):\n${personalContext}\n` : ''}
 WILL'S GOALS:
 - Target weight: ${GOALS.target_weight_lbs} lbs
 - Target body fat: ${GOALS.target_body_fat_pct}%

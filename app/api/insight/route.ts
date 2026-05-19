@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { getGoals } from '@/lib/getGoals'
 import { anthropic } from '@/lib/anthropic'
 import { USER_ID } from '@/lib/userId'
+import { getPersonalContext } from '@/lib/getPersonalContext'
 
 export const maxDuration = 30
 
@@ -21,8 +22,9 @@ export async function GET() {
   const todayStart = new Date().setUTCHours(0, 0, 0, 0)
   const dayOfWeek = DAY_NAMES[new Date().getDay()]
 
-  const [GOALS, nutritionAvgResult, todayNutritionResult, inbodyResult, whoopResult, workoutResult] = await Promise.all([
+  const [GOALS, personalContext, nutritionAvgResult, todayNutritionResult, inbodyResult, whoopResult, workoutResult] = await Promise.all([
     getGoals(),
+    getPersonalContext(),
     db.execute({
       sql: `SELECT
               ROUND(AVG(total_calories)) as avg_cal,
@@ -120,6 +122,7 @@ export async function GET() {
   }
 
   lines.push(`Athlete profile: hybrid (5x lifting + 3x soccer/week).`)
+  if (personalContext) lines.push(`Personal context: ${personalContext}`)
 
   const contextStr = lines.join('\n')
 

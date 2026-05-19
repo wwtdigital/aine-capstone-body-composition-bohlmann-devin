@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { getGoals } from '@/lib/getGoals'
 import { anthropic } from '@/lib/anthropic'
 import { USER_ID } from '@/lib/userId'
+import { getPersonalContext } from '@/lib/getPersonalContext'
 
 export const maxDuration = 60
 
@@ -17,8 +18,9 @@ type GapAnalysis = {
 export async function GET() {
   const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000
 
-  const [GOALS, nutritionResult, inbodyResult] = await Promise.all([
+  const [GOALS, personalContext, nutritionResult, inbodyResult] = await Promise.all([
     getGoals(),
+    getPersonalContext(),
     db.execute({
       sql: `SELECT date(logged_at/1000, 'unixepoch') as day, SUM(total_calories) as cal, SUM(total_protein) as prot FROM meals WHERE user_id = ? AND logged_at >= ? GROUP BY day ORDER BY day DESC`,
       args: [USER_ID, fourteenDaysAgo],
@@ -58,7 +60,7 @@ export async function GET() {
   const bfDelta = latest?.body_fat_pct != null ? (latest.body_fat_pct - GOALS.target_body_fat_pct).toFixed(1) : null
 
   const prompt = `You are a precision body recomposition coach analyzing data for Will Bohlmann. Be direct, data-driven, and specific. No fluff.
-
+${personalContext ? `\nPERSONAL CONTEXT (medications, supplements, habits — factor these into your analysis):\n${personalContext}\n` : ''}
 GOALS:
 - Target weight: ${GOALS.target_weight_lbs} lbs
 - Target body fat: ${GOALS.target_body_fat_pct}%

@@ -102,6 +102,63 @@ function AppearanceSection() {
   )
 }
 
+function PersonalContextSection() {
+  const [notes, setNotes] = useState('')
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+
+  useEffect(() => {
+    fetch('/api/profile')
+      .then(r => r.json())
+      .then(data => { if (data.context_notes) setNotes(data.context_notes) })
+      .catch(() => {})
+  }, [])
+
+  async function handleSave() {
+    setSaveState('saving')
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context_notes: notes }),
+      })
+      setSaveState(res.ok ? 'saved' : 'error')
+    } catch {
+      setSaveState('error')
+    }
+    setTimeout(() => setSaveState('idle'), 2500)
+  }
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-2 px-1">
+        <ISymbol size={14} className="text-ink3 opacity-60" />
+        <span className="eyebrow">Personal Context</span>
+      </div>
+      <FramedCard className="bg-card rounded-2xl border border-line p-4 space-y-3">
+        <p className="text-ink3 text-xs leading-relaxed">
+          Anything your coach should know: supplements, medications, injuries, habits, sleep patterns. Written in plain language — injected into every AI response.
+        </p>
+        <textarea
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+          rows={5}
+          placeholder="e.g. Taking creatine 5g/day and whey post-workout. History of left knee tendinitis. Sleep quality drops significantly after alcohol. On levothyroxine 50mcg..."
+          className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm text-ink placeholder:text-ink4 focus:outline-none focus:border-brand resize-none leading-relaxed"
+        />
+        <button
+          onClick={handleSave}
+          disabled={saveState === 'saving'}
+          className="w-full bg-brand text-page font-semibold rounded-full py-3 disabled:opacity-50 active:scale-95 transition-transform"
+        >
+          {saveState === 'saving' ? 'Saving…' : 'Save Context ›'}
+        </button>
+        {saveState === 'saved' && <p className="text-ok text-xs text-center font-medium">Saved — your coach will use this immediately</p>}
+        {saveState === 'error' && <p className="text-bad text-xs text-center">Failed to save. Try again.</p>}
+      </FramedCard>
+    </div>
+  )
+}
+
 function GoalsSection() {
   const [goals, setGoals] = useState<Goals>(GOAL_DEFAULTS)
   const [loading, setLoading] = useState(true)
@@ -426,6 +483,9 @@ function SettingsContent() {
             </FramedCard>
           </div>
         )}
+
+        {/* Personal Context */}
+        <PersonalContextSection />
 
         {/* Notifications */}
         <NotificationToggle />
