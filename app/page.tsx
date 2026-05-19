@@ -146,7 +146,7 @@ export default async function Today() {
             {
               label: 'Efficiency',
               value: whoop
-                ? (whoop.sleep_efficiency != null ? `${whoop.sleep_efficiency}%` : '—')
+                ? (whoop.sleep_efficiency != null ? `${Math.round(whoop.sleep_efficiency)}%` : '—')
                 : '87%',
             },
             {
@@ -540,9 +540,9 @@ function SleepStagesBar({ minutes, muted = false }: { minutes: number | null; mu
           <div key={s.label} style={{ width: `${s.pct * 100}%`, backgroundColor: s.color }} />
         ))}
       </div>
-      <div className="flex gap-3 flex-wrap">
+      <div className="flex gap-4 flex-wrap">
         {stages.map(s => (
-          <div key={s.label} className="flex items-center gap-1">
+          <div key={s.label} className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
             <span className="text-ink3 text-xs">{s.label} {fmt(total * s.pct)}</span>
           </div>
