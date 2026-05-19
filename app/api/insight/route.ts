@@ -17,7 +17,6 @@ const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
 
 export async function GET() {
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
-  const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000
   const todayStart = new Date().setUTCHours(0, 0, 0, 0)
   const dayOfWeek = DAY_NAMES[new Date().getDay()]
 
