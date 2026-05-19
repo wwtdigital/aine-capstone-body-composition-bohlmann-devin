@@ -198,6 +198,12 @@ export default async function Today() {
           ))}
         </div>
 
+        {/* 7-day HRV */}
+        <div className="mt-3 pt-3 border-t border-line">
+          <p className="eyebrow mb-2">HRV 7-day</p>
+          <HrvWeekBars values={whoop ? [...whoopWeek].reverse().map(r => r.hrv_ms) : null} avg={hrv7DayAvg} muted={!whoop} />
+        </div>
+
         {/* 7-day sleep */}
         <div className="mt-3 pt-3 border-t border-line">
           <p className="eyebrow mb-2">Sleep</p>
@@ -241,6 +247,9 @@ export default async function Today() {
             </div>
           ))}
         </div>
+        {whoop && whoop.recovery_score != null && (
+          <RecoveryAdjustedMacros score={whoop.recovery_score} baseCalories={GOALS.daily_calories} />
+        )}
       </FramedCard>
 
       {/* 7-day adherence strip */}
@@ -440,10 +449,8 @@ const HYBRID_TIPS: { title: string; body: string; tag: string }[] = [
   },
 ]
 
-function HybridAthleteTip({ dayOfWeek }: { dayOfWeek: number }) {
-  // Rotate through all tips based on day-of-year so each day shows a different tip
-  const dayOfYear = Math.floor(Date.now() / 86400000)
-  const tip = HYBRID_TIPS[dayOfYear % HYBRID_TIPS.length]
+function HybridAthleteTip({ dayOfWeek: _ }: { dayOfWeek: number }) {
+  const tip = HYBRID_TIPS[Math.floor(Math.random() * HYBRID_TIPS.length)]
 
   return (
     <div className="mx-4 mt-4">
@@ -461,7 +468,7 @@ function HybridAthleteTip({ dayOfWeek }: { dayOfWeek: number }) {
         <p className="text-ink3 text-xs mt-1.5 leading-relaxed">{tip.body}</p>
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-line">
           <p className="text-ink4 text-[10px] font-medium uppercase tracking-wide">Science-backed · 5× lift + 3× soccer</p>
-          <p className="text-ink4 text-[10px]">{(dayOfYear % HYBRID_TIPS.length) + 1}/{HYBRID_TIPS.length}</p>
+          <p className="text-ink4 text-[10px]">{HYBRID_TIPS.length} tips · refreshes each visit</p>
         </div>
       </div>
     </div>
@@ -565,6 +572,59 @@ function RecoveryArc({ score, muted = false }: { score: number | null; muted?: b
   )
 }
 
+function HrvWeekBars({ values, avg, muted = false }: {
+  values: (number | null)[] | null
+  avg: number | null
+  muted?: boolean
+}) {
+  const demo = [48, 55, 51, 62, 44, 58, 52]
+  const data = values ?? demo
+  const demoAvg = 53
+  const baseline = avg ?? demoAvg
+  const maxVal = Math.max(...(data.filter((v): v is number => v != null)), baseline * 1.2, 1)
+
+  return (
+    <div className={muted ? 'opacity-50' : ''}>
+      <div className="flex items-end gap-1 h-10">
+        {data.map((hrv, i) => {
+          const pct = hrv != null ? hrv / maxVal : 0
+          const isToday = i === data.length - 1
+          const color = hrv == null ? 'var(--color-surface)'
+            : hrv >= baseline * 1.05 ? '#10b981'
+            : hrv >= baseline * 0.9 ? '#6366f1'
+            : '#f59e0b'
+          return (
+            <div key={i} className="flex-1 flex flex-col justify-end">
+              <div
+                className="w-full rounded-sm"
+                style={{ height: `${Math.max(10, pct * 100)}%`, backgroundColor: color, opacity: isToday ? 1 : 0.55 }}
+              />
+            </div>
+          )
+        })}
+      </div>
+      {/* Avg baseline label */}
+      <div className="flex gap-1 mt-1">
+        {data.map((_, i) => {
+          const daysAgo = data.length - 1 - i
+          const label = new Date(Date.now() - daysAgo * 86400000).toLocaleDateString('en-US', { weekday: 'narrow' })
+          return (
+            <div key={i} className="flex-1 text-center">
+              <span className="text-ink4 text-[9px]">{label}</span>
+            </div>
+          )
+        })}
+      </div>
+      <div className="flex justify-between mt-1">
+        <p className="text-ink3 text-xs">HRV 7-day</p>
+        {baseline > 0 && (
+          <p className="text-ink3 text-xs tabular-nums">{baseline}ms avg</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function SleepWeekBars({ values, muted = false }: {
   values: (number | null)[] | null
   muted?: boolean
@@ -605,6 +665,26 @@ function SleepWeekBars({ values, muted = false }: {
         {data[data.length - 1] != null && (
           <p className="text-ink3 text-xs tabular-nums">{fmt(data[data.length - 1]!)}</p>
         )}
+      </div>
+    </div>
+  )
+}
+
+function RecoveryAdjustedMacros({ score, baseCalories }: { score: number; baseCalories: number }) {
+  const green = score >= 67
+  const amber = score >= 34
+  if (green) return null
+  const adjustedCal = amber ? Math.round(baseCalories * 0.9) : baseCalories - 200
+  const label = amber
+    ? `Moderate recovery — ${Math.round(baseCalories * 0.1)} cal reduction suggested`
+    : 'Poor recovery — reduce by 200 cal, prioritize rest'
+  const color = amber ? 'text-warn' : 'text-bad'
+  const border = amber ? 'border-warn/20 bg-warn/8' : 'border-bad/20 bg-bad/8'
+  return (
+    <div className="mt-3 pt-3 border-t border-line">
+      <div className={`flex items-center justify-between rounded-xl border px-3 py-2 ${border}`}>
+        <p className={`text-xs font-semibold ${color}`}>{label}</p>
+        <p className="text-ink3 text-xs tabular-nums shrink-0">{adjustedCal.toLocaleString()} cal</p>
       </div>
     </div>
   )

@@ -63,7 +63,9 @@ export default function RootLayout({
           <OnboardingGate />
           <ServiceWorkerRegistration />
           <PwaInstallPrompt />
-          {children}
+          <main className="lg:max-w-2xl lg:mx-auto">
+            {children}
+          </main>
           <BottomNav />
           <FloatingChat />
         </ThemeProvider>

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { db } from '@/lib/db'
 import { getGoals } from '@/lib/getGoals'
+import { USER_ID } from '@/lib/userId'
 import { Plus, Upload, Camera } from 'lucide-react'
 import WeightChart from '@/components/WeightChart'
 import WeekCharts from '../week/WeekCharts'
@@ -154,6 +155,15 @@ export default async function ProgressPage({
     args: [],
   })
   const whoopHrv = whoopHrvResult.rows as unknown as { date: string; hrv_ms: number | null }[]
+
+  let recentPhotos: { id: string; pose: string; photo_url: string; taken_at: number }[] = []
+  try {
+    const photosResult = await db.execute({
+      sql: `SELECT id, pose, photo_url, taken_at FROM progress_photos WHERE user_id = ? ORDER BY taken_at DESC LIMIT 6`,
+      args: [USER_ID],
+    })
+    recentPhotos = photosResult.rows as unknown as typeof recentPhotos
+  } catch { /* table may not exist yet */ }
 
   const hrvChartData = whoopHrv.length >= 3
     ? whoopHrv.map(r => ({
@@ -391,6 +401,29 @@ export default async function ProgressPage({
                     weightGoal={GOALS.target_weight_lbs}
                     bfGoal={GOALS.target_body_fat_pct}
                   />
+                </FramedCard>
+              )}
+
+              {recentPhotos.length > 0 && (
+                <FramedCard className="bg-card rounded-2xl border border-line p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="eyebrow">Recent Photos</span>
+                    <Link href="/progress-photos" className="text-xs text-brand font-semibold">View all ›</Link>
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {recentPhotos.map(p => (
+                      <div key={p.id} className="shrink-0 w-20 rounded-xl overflow-hidden aspect-[3/4] bg-surface relative">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={p.photo_url} alt={p.pose} className="w-full h-full object-cover" />
+                        <div className="absolute bottom-0 left-0 right-0 px-1.5 py-1 bg-black/50">
+                          <span className="text-white text-[10px] font-medium capitalize">{p.pose}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-ink4 text-xs mt-2">
+                    {new Date(recentPhotos[0].taken_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </p>
                 </FramedCard>
               )}
 

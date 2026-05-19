@@ -29,6 +29,19 @@ type Workout = {
 type Tab = 'meals' | 'workouts'
 type SessionType = 'Strength' | 'Soccer' | 'Cardio' | 'Other'
 
+type PeriMeal = { id: string; logged_at: number; total_calories: number; total_protein: number }
+type WorkoutSet = { exercise: string; set_num: number; reps: number | null; weight_lbs: number | null }
+type DigestData = {
+  totalWorkouts: number
+  workoutBreakdown: { session_type: string; cnt: number }[]
+  avgCal: number | null
+  avgProt: number | null
+  daysLogged: number
+  avgRecovery: number | null
+  calPct: number | null
+  protPct: number | null
+}
+
 const SESSION_COLORS: Record<string, string> = {
   Strength: 'bg-blue-500/15 text-blue-400',
   Soccer: 'bg-ok/15 text-ok',
@@ -80,6 +93,10 @@ export default function HistoryPage() {
   const [editWorkout, setEditWorkout] = useState<{ session_type: SessionType; duration: string; notes: string }>({ session_type: 'Strength', duration: '', notes: '' })
   const [deletingWorkoutId, setDeletingWorkoutId] = useState<string | null>(null)
   const [expandedWorkoutId, setExpandedWorkoutId] = useState<string | null>(null)
+  const [periMeals, setPeriMeals] = useState<Record<string, PeriMeal[]>>({})
+  const [setsData, setSetsData] = useState<Record<string, WorkoutSet[]>>({})
+  const [loadedWorkouts, setLoadedWorkouts] = useState<Set<string>>(new Set())
+  const [digest, setDigest] = useState<DigestData | null>(null)
 
   const fetchMeals = useCallback(async () => {
     setMealsLoading(true)
@@ -106,6 +123,26 @@ export default function HistoryPage() {
 
   useEffect(() => { fetchMeals() }, [fetchMeals])
   useEffect(() => { fetchWorkouts() }, [fetchWorkouts])
+  useEffect(() => {
+    fetch('/api/digest/weekly').then(r => r.ok ? r.json() : null).then(d => { if (d) setDigest(d) })
+  }, [])
+
+  async function loadWorkoutDetails(w: Workout) {
+    setLoadedWorkouts(prev => new Set(prev).add(w.id))
+    const window2h = 2 * 60 * 60 * 1000
+    const [mealsRes, setsRes] = await Promise.all([
+      fetch(`/api/meals?from=${w.logged_at - window2h}&to=${w.logged_at + window2h}`),
+      w.session_type === 'Strength' ? fetch(`/api/workouts/sets?sessionId=${w.id}`) : Promise.resolve(null),
+    ])
+    if (mealsRes.ok) {
+      const meals = await mealsRes.json()
+      setPeriMeals(prev => ({ ...prev, [w.id]: meals }))
+    }
+    if (setsRes && setsRes.ok) {
+      const { sets } = await setsRes.json()
+      setSetsData(prev => ({ ...prev, [w.id]: sets }))
+    }
+  }
 
   // Meal handlers
   function startEditMeal(meal: Meal) {
@@ -217,6 +254,55 @@ export default function HistoryPage() {
           </button>
         </div>
       </div>
+
+      {/* Weekly digest */}
+      {digest && (
+        <div className="px-4 mb-5">
+          <div className="bg-gradient-to-br from-brand/8 to-card rounded-2xl border border-brand/20 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <span className="eyebrow">This Week</span>
+              <span className="text-ink4 text-xs">{digest.daysLogged}/7 days logged</span>
+            </div>
+            <div className="grid grid-cols-4 gap-2 text-center">
+              <div>
+                <p className="text-ink font-bold text-lg tabular-nums">{digest.totalWorkouts}</p>
+                <p className="text-ink3 text-xs">sessions</p>
+              </div>
+              <div>
+                <p className={`font-bold text-lg tabular-nums ${digest.calPct != null && digest.calPct >= 90 ? 'text-ok' : 'text-warn'}`}>
+                  {digest.calPct != null ? `${digest.calPct}%` : '—'}
+                </p>
+                <p className="text-ink3 text-xs">cal goal</p>
+              </div>
+              <div>
+                <p className={`font-bold text-lg tabular-nums ${digest.protPct != null && digest.protPct >= 90 ? 'text-ok' : 'text-warn'}`}>
+                  {digest.protPct != null ? `${digest.protPct}%` : '—'}
+                </p>
+                <p className="text-ink3 text-xs">prot goal</p>
+              </div>
+              <div>
+                <p className={`font-bold text-lg tabular-nums ${
+                  digest.avgRecovery == null ? 'text-ink3' :
+                  digest.avgRecovery >= 67 ? 'text-ok' :
+                  digest.avgRecovery >= 34 ? 'text-warn' : 'text-bad'
+                }`}>
+                  {digest.avgRecovery ?? '—'}
+                </p>
+                <p className="text-ink3 text-xs">recovery</p>
+              </div>
+            </div>
+            {digest.workoutBreakdown.length > 0 && (
+              <div className="flex gap-1.5 mt-3 pt-3 border-t border-line flex-wrap">
+                {digest.workoutBreakdown.map(b => (
+                  <span key={b.session_type} className={`text-xs px-2 py-0.5 rounded-full font-semibold ${SESSION_COLORS[b.session_type] ?? SESSION_COLORS.Other}`}>
+                    {b.cnt}× {b.session_type}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Tab toggle */}
       <div className="px-4 mb-5">
@@ -435,14 +521,16 @@ export default function HistoryPage() {
                           <p className="text-ink3 text-xs">{dateLabel} · {time}</p>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
-                          {w.muscles.length > 0 && (
-                            <button
-                              onClick={() => setExpandedWorkoutId(isExpanded ? null : w.id)}
-                              className="w-8 h-8 flex items-center justify-center text-ink3 hover:text-ink active:scale-90 transition-transform"
-                            >
-                              {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                            </button>
-                          )}
+                          <button
+                            onClick={() => {
+                              const next = isExpanded ? null : w.id
+                              setExpandedWorkoutId(next)
+                              if (next && !loadedWorkouts.has(next)) loadWorkoutDetails(w)
+                            }}
+                            className="w-8 h-8 flex items-center justify-center text-ink3 hover:text-ink active:scale-90 transition-transform"
+                          >
+                            {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                          </button>
                           <button
                             onClick={() => startEditWorkout(w)}
                             className="w-8 h-8 flex items-center justify-center text-ink3 hover:text-ink active:scale-90 transition-transform"
@@ -463,20 +551,90 @@ export default function HistoryPage() {
                         <p className="text-ink3 text-xs mt-1.5 truncate">{w.notes}</p>
                       )}
 
-                      {isExpanded && w.muscles.length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-line flex flex-wrap gap-1.5">
-                          {w.muscles.map(m => (
-                            <span
-                              key={m.muscle_id}
-                              className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${
-                                m.volume === 'high' ? 'bg-brand/15 border-brand/30 text-brand' :
-                                m.volume === 'medium' ? 'bg-ok/10 border-ok/20 text-ok' :
-                                'bg-surface border-line text-ink3'
-                              }`}
-                            >
-                              {m.muscle_id.replace(/-/g, ' ')}
-                            </span>
-                          ))}
+                      {isExpanded && (
+                        <div className="mt-3 pt-3 border-t border-line space-y-3">
+                          {/* Muscle tags */}
+                          {w.muscles.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {w.muscles.map(m => (
+                                <span
+                                  key={m.muscle_id}
+                                  className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${
+                                    m.volume === 'high' ? 'bg-brand/15 border-brand/30 text-brand' :
+                                    m.volume === 'medium' ? 'bg-ok/10 border-ok/20 text-ok' :
+                                    'bg-surface border-line text-ink3'
+                                  }`}
+                                >
+                                  {m.muscle_id.replace(/-/g, ' ')}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Sets (Strength) */}
+                          {w.session_type === 'Strength' && setsData[w.id] && setsData[w.id].length > 0 && (() => {
+                            const byExercise: Record<string, WorkoutSet[]> = {}
+                            for (const s of setsData[w.id]) {
+                              if (!byExercise[s.exercise]) byExercise[s.exercise] = []
+                              byExercise[s.exercise].push(s)
+                            }
+                            return (
+                              <div className="space-y-1.5">
+                                <p className="text-ink4 text-[10px] font-semibold uppercase tracking-wider">Sets</p>
+                                {Object.entries(byExercise).map(([exercise, exSets]) => (
+                                  <div key={exercise} className="flex items-start gap-2">
+                                    <p className="text-ink3 text-xs font-medium w-28 shrink-0 truncate">{exercise}</p>
+                                    <div className="flex flex-wrap gap-1">
+                                      {exSets.map((s, i) => (
+                                        <span key={i} className="text-[11px] bg-surface border border-line rounded-lg px-2 py-0.5 tabular-nums text-ink3">
+                                          {s.reps ?? '—'}×{s.weight_lbs != null ? `${s.weight_lbs}lb` : '—'}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )
+                          })()}
+
+                          {/* Peri-workout meals */}
+                          {periMeals[w.id] && periMeals[w.id].length > 0 && (() => {
+                            const pre = periMeals[w.id].filter(m => m.logged_at < w.logged_at)
+                            const post = periMeals[w.id].filter(m => m.logged_at >= w.logged_at)
+                            return (
+                              <div className="space-y-1.5">
+                                <p className="text-ink4 text-[10px] font-semibold uppercase tracking-wider">Peri-workout meals</p>
+                                {pre.length > 0 && (
+                                  <div>
+                                    <p className="text-ink4 text-[10px] mb-1">Pre</p>
+                                    {pre.map(m => (
+                                      <div key={m.id} className="flex items-center justify-between text-xs py-0.5">
+                                        <span className="text-ink3">{new Date(m.logged_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
+                                        <div className="flex gap-2 tabular-nums">
+                                          <span className="text-ink font-medium">{Math.round(Number(m.total_calories))} cal</span>
+                                          <span className="text-ok">{Math.round(Number(m.total_protein))}g P</span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                {post.length > 0 && (
+                                  <div>
+                                    <p className="text-ink4 text-[10px] mb-1">Post</p>
+                                    {post.map(m => (
+                                      <div key={m.id} className="flex items-center justify-between text-xs py-0.5">
+                                        <span className="text-ink3">{new Date(m.logged_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
+                                        <div className="flex gap-2 tabular-nums">
+                                          <span className="text-ink font-medium">{Math.round(Number(m.total_calories))} cal</span>
+                                          <span className="text-ok">{Math.round(Number(m.total_protein))}g P</span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })()}
                         </div>
                       )}
                     </div>

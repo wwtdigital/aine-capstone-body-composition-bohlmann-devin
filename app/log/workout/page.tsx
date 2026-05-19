@@ -2,11 +2,12 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, CheckCircle } from 'lucide-react'
+import { ArrowLeft, CheckCircle, Plus, X } from 'lucide-react'
 import FramedCard from '@/components/FramedCard'
 
 type SessionType = 'Strength' | 'Soccer' | 'Cardio' | 'Other'
 type Volume = 'low' | 'medium' | 'high'
+type SetEntry = { exercise: string; reps: string; weight: string }
 
 const MUSCLE_IDS = [
   'chest', 'front-delt', 'biceps', 'abs', 'quads', 'hip-flexors', 'calves',
@@ -43,6 +44,7 @@ export default function LogWorkoutPage() {
   const [duration, setDuration] = useState('')
   const [notes, setNotes] = useState('')
   const [selectedMuscles, setSelectedMuscles] = useState<Record<string, Volume>>({})
+  const [sets, setSets] = useState<SetEntry[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [saved, setSaved] = useState(false)
@@ -91,6 +93,29 @@ export default function LogWorkoutPage() {
         return
       }
 
+      const data = await res.json()
+
+      if (sessionType === 'Strength' && sets.some(s => s.exercise.trim())) {
+        const exerciseCounters: Record<string, number> = {}
+        const setsPayload = sets
+          .filter(s => s.exercise.trim())
+          .map(s => {
+            const ex = s.exercise.trim()
+            exerciseCounters[ex] = (exerciseCounters[ex] ?? 0) + 1
+            return {
+              exercise: ex,
+              setNum: exerciseCounters[ex],
+              reps: s.reps ? parseInt(s.reps, 10) : null,
+              weightLbs: s.weight ? parseFloat(s.weight) : null,
+            }
+          })
+        await fetch('/api/workouts/sets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: data.id, sets: setsPayload }),
+        })
+      }
+
       setSaved(true)
     } catch {
       setError('Connection error. Try again.')
@@ -111,6 +136,7 @@ export default function LogWorkoutPage() {
               setDuration('')
               setNotes('')
               setSelectedMuscles({})
+              setSets([])
             }}
             className="bg-surface border border-line text-ink font-semibold rounded-2xl py-3 text-center"
           >
@@ -222,6 +248,60 @@ export default function LogWorkoutPage() {
                 )
               })}
             </div>
+          </div>
+        )}
+
+        {/* Sets logger — Strength only */}
+        {sessionType === 'Strength' && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <p className="eyebrow">Sets</p>
+              <button
+                type="button"
+                onClick={() => setSets(prev => [...prev, { exercise: '', reps: '', weight: '' }])}
+                className="flex items-center gap-1 text-brand text-xs font-semibold"
+              >
+                <Plus size={14} /> Add set
+              </button>
+            </div>
+            {sets.length === 0 ? (
+              <p className="text-ink4 text-sm">Tap &quot;Add set&quot; to log exercises.</p>
+            ) : (
+              <div className="space-y-2">
+                {sets.map((s, i) => (
+                  <div key={i} className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      placeholder="Exercise"
+                      value={s.exercise}
+                      onChange={e => setSets(prev => prev.map((x, j) => j === i ? { ...x, exercise: e.target.value } : x))}
+                      className="flex-1 bg-surface border border-line rounded-lg px-2 py-1.5 text-ink text-sm focus:outline-none focus:border-brand"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Reps"
+                      value={s.reps}
+                      onChange={e => setSets(prev => prev.map((x, j) => j === i ? { ...x, reps: e.target.value } : x))}
+                      className="w-14 bg-surface border border-line rounded-lg px-2 py-1.5 text-ink text-sm focus:outline-none text-center"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Lbs"
+                      value={s.weight}
+                      onChange={e => setSets(prev => prev.map((x, j) => j === i ? { ...x, weight: e.target.value } : x))}
+                      className="w-16 bg-surface border border-line rounded-lg px-2 py-1.5 text-ink text-sm focus:outline-none text-center"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setSets(prev => prev.filter((_, j) => j !== i))}
+                      className="text-ink4 hover:text-bad active:scale-90 transition-transform"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

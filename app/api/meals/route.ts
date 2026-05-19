@@ -76,9 +76,20 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const limit = Math.min(parseInt(searchParams.get('limit') ?? '200', 10), 500)
-  const result = await db.execute({
-    sql: `SELECT id, logged_at, total_calories, total_protein, total_carbs, total_fat, items_json FROM meals WHERE user_id = ? ORDER BY logged_at DESC LIMIT ?`,
-    args: [USER_ID, limit],
-  })
+  const from = searchParams.get('from') ? parseInt(searchParams.get('from')!, 10) : null
+  const to = searchParams.get('to') ? parseInt(searchParams.get('to')!, 10) : null
+
+  const args: (string | number)[] = [USER_ID]
+  let sql = `SELECT id, logged_at, total_calories, total_protein, total_carbs, total_fat, items_json FROM meals WHERE user_id = ?`
+  if (from !== null) { sql += ` AND logged_at >= ?`; args.push(from) }
+  if (to !== null) { sql += ` AND logged_at <= ?`; args.push(to) }
+  if (from === null && to === null) {
+    sql += ` ORDER BY logged_at DESC LIMIT ?`
+    args.push(limit)
+  } else {
+    sql += ` ORDER BY logged_at ASC`
+  }
+
+  const result = await db.execute({ sql, args })
   return NextResponse.json(result.rows)
 }
