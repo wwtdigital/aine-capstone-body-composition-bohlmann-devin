@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
+import { useState, FormEvent, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { Upload, Loader } from 'lucide-react'
 
 export default function InBodyNewPage() {
   const [fields, setFields] = useState({
@@ -13,8 +14,37 @@ export default function InBodyNewPage() {
     visceral_fat_level: '',
   })
   const [saving, setSaving] = useState(false)
+  const [scanning, setScanning] = useState(false)
+  const [scanMsg, setScanMsg] = useState('')
   const [error, setError] = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
+
+  async function handleScan(file: File) {
+    setScanning(true)
+    setScanMsg('Reading PDF...')
+    setError('')
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      const res = await fetch('/api/inbody/parse', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error ?? 'Could not extract data from this file.'); return }
+      setScanMsg('Fields extracted — review below')
+      setFields(prev => ({
+        reading_date: data.reading_date ?? prev.reading_date,
+        weight_kg: data.weight_kg != null ? String(data.weight_kg) : prev.weight_kg,
+        body_fat_pct: data.body_fat_pct != null ? String(data.body_fat_pct) : prev.body_fat_pct,
+        lean_mass_kg: data.lean_mass_kg != null ? String(data.lean_mass_kg) : prev.lean_mass_kg,
+        body_water_kg: data.body_water_kg != null ? String(data.body_water_kg) : prev.body_water_kg,
+        visceral_fat_level: data.visceral_fat_level != null ? String(data.visceral_fat_level) : prev.visceral_fat_level,
+      }))
+    } catch {
+      setError('Connection error. Try again.')
+    } finally {
+      setScanning(false)
+    }
+  }
 
   function set(field: string, value: string) {
     setFields(prev => ({ ...prev, [field]: value }))
@@ -61,6 +91,27 @@ export default function InBodyNewPage() {
       <div className="px-4 pt-12 pb-6">
         <h1 className="text-2xl font-bold text-ink tracking-tight">New Reading</h1>
         <p className="text-ink3 text-sm">InBody measurement</p>
+      </div>
+
+      {/* PDF scan */}
+      <div className="px-4 mb-4">
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".pdf,image/*"
+          className="hidden"
+          onChange={e => { const f = e.target.files?.[0]; if (f) handleScan(f); e.target.value = '' }}
+        />
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={scanning}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-line bg-surface text-ink3 text-sm font-medium active:scale-95 transition-transform disabled:opacity-50"
+        >
+          {scanning ? <Loader size={15} className="animate-spin" /> : <Upload size={15} />}
+          {scanning ? scanMsg : 'Scan InBody PDF or photo'}
+        </button>
+        {scanMsg && !scanning && <p className="text-ok text-xs mt-2 text-center">{scanMsg}</p>}
       </div>
 
       <form onSubmit={handleSubmit} className="px-4 space-y-3">

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Sparkles, X, Send } from 'lucide-react'
+import { Sparkles, X, Send, SquarePen } from 'lucide-react'
 
 type Message = { role: 'user' | 'assistant'; content: string }
 
@@ -69,6 +69,13 @@ export default function FloatingChat() {
     setOpen(false)
   }
 
+  function newChat() {
+    const newId = crypto.randomUUID()
+    localStorage.setItem(LS_SESSION, newId)
+    setSessionId(newId)
+    setMessages([])
+  }
+
   async function send(text: string) {
     if (!text.trim() || loading) return
     const trimmed = text.trim()
@@ -83,17 +90,34 @@ export default function FloatingChat() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: trimmed, sessionId }),
       })
-      const data = await res.json()
-      if (!res.ok) {
+
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => ({}))
         setMessages(prev => [...prev, { role: 'assistant', content: data.error ?? 'Something went wrong. Try again.' }])
-      } else {
-        setMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
+        setLoading(false)
+        return
+      }
+
+      // Add empty assistant message; stream chunks into it
+      setMessages(prev => [...prev, { role: 'assistant', content: '' }])
+      setLoading(false)
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const chunk = decoder.decode(value, { stream: true })
+        setMessages(prev => {
+          const arr = [...prev]
+          arr[arr.length - 1] = { role: 'assistant', content: arr[arr.length - 1].content + chunk }
+          return arr
+        })
       }
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Connection error. Try again.' }])
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -119,18 +143,28 @@ export default function FloatingChat() {
         style={{ height: '75vh' }}
       >
         {/* Header */}
-        <div className="flex items-start justify-between px-4 pt-4 pb-3 border-b border-line shrink-0">
+        <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-line shrink-0">
           <div>
             <h2 className="text-base font-semibold text-ink">Coach AI</h2>
             <p className="text-xs text-ink3 mt-0.5">Knows your meals, recovery &amp; body comp</p>
           </div>
-          <button
-            onClick={closeDrawer}
-            className="w-8 h-8 rounded-full bg-surface flex items-center justify-center text-ink3 active:scale-95 transition-transform"
-            aria-label="Close chat"
-          >
-            <X size={16} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={newChat}
+              className="w-8 h-8 rounded-full bg-surface flex items-center justify-center text-ink3 active:scale-95 transition-transform"
+              aria-label="New chat"
+              title="New chat"
+            >
+              <SquarePen size={15} />
+            </button>
+            <button
+              onClick={closeDrawer}
+              className="w-8 h-8 rounded-full bg-surface flex items-center justify-center text-ink3 active:scale-95 transition-transform"
+              aria-label="Close chat"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
 
         {/* Messages */}

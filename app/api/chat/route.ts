@@ -5,7 +5,7 @@ import { anthropic } from '@/lib/anthropic'
 import { USER_ID } from '@/lib/userId'
 import { getPersonalContext } from '@/lib/getPersonalContext'
 
-export const maxDuration = 45
+export const maxDuration = 60
 
 async function ensureTable() {
   await db.execute({
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
   const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
 
-  const [GOALS, personalContext, mealsResult, inbodyResult, historyResult, whoopResult] = await Promise.all([
+  const [GOALS, personalContext, mealsResult, inbodyResult, historyResult, whoopResult, workoutResult] = await Promise.all([
     getGoals(),
     getPersonalContext(),
     db.execute({
@@ -57,12 +57,17 @@ export async function POST(request: NextRequest) {
       sql: `SELECT recovery_score, strain, hrv_ms, sleep_minutes FROM whoop_daily WHERE user_id = ? ORDER BY date DESC LIMIT 1`,
       args: [USER_ID],
     }),
+    db.execute({
+      sql: `SELECT session_type, duration_minutes, notes, strain, date(logged_at/1000, 'unixepoch') as day FROM workout_sessions WHERE user_id = ? AND logged_at >= ? ORDER BY logged_at DESC LIMIT 14`,
+      args: [USER_ID, thirtyDaysAgo],
+    }),
   ])
 
   const mealRows = mealsResult.rows as unknown as { day: string; cal: number; prot: number; carbs: number; fat: number; meals: number }[]
   const inbodyRows = inbodyResult.rows as unknown as { reading_date: number; weight_kg: number | null; body_fat_pct: number | null; lean_mass_kg: number | null }[]
   const historyRows = historyResult.rows as unknown as { role: string; content: string }[]
   const whoopRow = (whoopResult.rows as unknown as { recovery_score: number | null; strain: number | null; hrv_ms: number | null; sleep_minutes: number | null }[])[0] ?? null
+  const workoutRows = workoutResult.rows as unknown as { session_type: string; duration_minutes: number | null; notes: string | null; strain: number | null; day: string }[]
 
   const nutritionSummary = mealRows.length > 0
     ? mealRows.slice(0, 14).map(r =>
@@ -80,6 +85,16 @@ export async function POST(request: NextRequest) {
   const whoopSummary = whoopRow
     ? `Recovery: ${whoopRow.recovery_score ?? 'N/A'}/100, Strain: ${whoopRow.strain ?? 'N/A'}, HRV: ${whoopRow.hrv_ms ?? 'N/A'}ms, Sleep: ${whoopRow.sleep_minutes != null ? Math.round(whoopRow.sleep_minutes / 60 * 10) / 10 + 'h' : 'N/A'}`
     : 'No Whoop data available'
+
+  const workoutSummary = workoutRows.length > 0
+    ? workoutRows.map(r => {
+        const parts = [`${r.day}: ${r.session_type}`]
+        if (r.duration_minutes) parts.push(`${r.duration_minutes} min`)
+        if (r.strain != null) parts.push(`strain ${r.strain.toFixed(1)}`)
+        if (r.notes) parts.push(`(${r.notes})`)
+        return parts.join(', ')
+      }).join('\n')
+    : 'No workouts logged'
 
   const systemPrompt = `You are Will Bohlmann's personal body composition coach embedded in his fitness app. You have direct access to his logged data. Be conversational, specific, and direct. Use his actual numbers when answering — don't be vague.
 
@@ -99,6 +114,9 @@ ${whoopSummary}
 INBODY READINGS (most recent first):
 ${inbodySummary}
 
+RECENT WORKOUTS (last 30 days, most recent first):
+${workoutSummary}
+
 NUTRITION LOG (last 14 logged days, most recent first):
 ${nutritionSummary}
 
@@ -116,26 +134,51 @@ Keep responses concise — 2-4 sentences unless detail is requested. Use his act
     { role: 'user' as const, content: message.trim() },
   ]
 
-  let reply: string
+  let claudeStream: ReturnType<typeof anthropic.messages.stream>
   try {
-    const response = await anthropic.messages.create({
+    claudeStream = anthropic.messages.stream({
       model: 'claude-sonnet-4-6',
       max_tokens: 512,
       system: systemPrompt,
       messages,
     })
-    reply = response.content[0].type === 'text' ? response.content[0].text : ''
   } catch (err) {
-    console.error('Chat error:', err)
-    return NextResponse.json({ error: 'Failed to get response. Try again.' }, { status: 502 })
+    console.error('Chat stream init error:', err)
+    return NextResponse.json({ error: 'Failed to start response. Try again.' }, { status: 502 })
   }
 
-  // Save assistant reply
-  const assistantMsgId = `${sessionId}-${Date.now()}-a`
-  await db.execute({
-    sql: `INSERT INTO chat_history (id, user_id, role, content, created_at) VALUES (?, ?, 'assistant', ?, ?)`,
-    args: [assistantMsgId, USER_ID, reply, Date.now()],
+  const encoder = new TextEncoder()
+  let fullReply = ''
+
+  const readable = new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const text of claudeStream.textStream) {
+          fullReply += text
+          controller.enqueue(encoder.encode(text))
+        }
+      } catch (err) {
+        console.error('Stream error:', err)
+        controller.enqueue(encoder.encode('\n[response interrupted]'))
+      } finally {
+        controller.close()
+      }
+    },
   })
 
-  return NextResponse.json({ reply, sessionId })
+  // Save assistant reply after stream completes (non-blocking)
+  claudeStream.finalMessage()
+    .then(async () => {
+      if (!fullReply) return
+      const assistantMsgId = `${sessionId}-${Date.now()}-a`
+      await db.execute({
+        sql: `INSERT INTO chat_history (id, user_id, role, content, created_at) VALUES (?, ?, 'assistant', ?, ?)`,
+        args: [assistantMsgId, USER_ID, fullReply, Date.now()],
+      })
+    })
+    .catch(err => console.error('Failed to save assistant reply:', err))
+
+  return new Response(readable, {
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+  })
 }
