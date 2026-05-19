@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { GOALS } from '@/lib/goals'
+import { getGoals } from '@/lib/getGoals'
 import Link from 'next/link'
 import MacroRing from '@/components/MacroRing'
 import MealList from '@/components/MealSheet'
@@ -24,7 +24,8 @@ export default async function Today() {
   const todayStr = new Date().toISOString().split('T')[0]
   const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0]
 
-  const [nutritionResult, inbodyResult, mealsResult, whoopResult, whoopWeekResult, weekNutritionResult] = await Promise.all([
+  const [GOALS, nutritionResult, inbodyResult, mealsResult, whoopResult, whoopWeekResult, weekNutritionResult] = await Promise.all([
+    getGoals(),
     db.execute({
       sql: `SELECT COALESCE(SUM(total_calories),0) as cal, COALESCE(SUM(total_protein),0) as prot, COALESCE(SUM(total_carbs),0) as carbs, COALESCE(SUM(total_fat),0) as fat FROM meals WHERE user_id = 'will' AND logged_at >= ?`,
       args: [todayStart],
@@ -261,14 +262,14 @@ export default async function Today() {
             <StatBlock
               value={latest.weight_kg != null ? Math.round(latest.weight_kg * 2.20462).toString() : '—'}
               unit="lbs"
-              delta={latest.weight_kg != null ? (latest.weight_kg - GOALS.weight_kg) * 2.20462 : null}
+              delta={latest.weight_kg != null ? (Math.round(latest.weight_kg * 2.20462) - GOALS.target_weight_lbs) : null}
               label="Weight"
               positiveIsGood={false}
             />
             <StatBlock
               value={latest.body_fat_pct?.toFixed(1) ?? '—'}
               unit="%"
-              delta={latest.body_fat_pct != null ? (latest.body_fat_pct - GOALS.body_fat_pct) : null}
+              delta={latest.body_fat_pct != null ? (latest.body_fat_pct - GOALS.target_body_fat_pct) : null}
               label="Body Fat"
               positiveIsGood={false}
             />

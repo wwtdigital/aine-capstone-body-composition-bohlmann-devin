@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { GOALS } from '@/lib/goals'
+import { getGoals } from '@/lib/getGoals'
 import WeekCharts from './WeekCharts'
 
 export const revalidate = 0
@@ -10,10 +10,13 @@ type DayData = { day: string; calories: number; protein: number }
 export default async function WeekPage() {
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
 
-  const result = await db.execute({
-    sql: `SELECT date(logged_at/1000, 'unixepoch') as day, ROUND(SUM(total_calories)) as calories, ROUND(SUM(total_protein)) as protein FROM meals WHERE user_id = 'will' AND logged_at >= ? GROUP BY day ORDER BY day ASC`,
-    args: [sevenDaysAgo],
-  })
+  const [GOALS, result] = await Promise.all([
+    getGoals(),
+    db.execute({
+      sql: `SELECT date(logged_at/1000, 'unixepoch') as day, ROUND(SUM(total_calories)) as calories, ROUND(SUM(total_protein)) as protein FROM meals WHERE user_id = 'will' AND logged_at >= ? GROUP BY day ORDER BY day ASC`,
+      args: [sevenDaysAgo],
+    }),
+  ])
 
   const rows = result.rows as unknown as DayRow[]
 

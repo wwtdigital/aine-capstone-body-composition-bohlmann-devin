@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { db } from '@/lib/db'
-import { GOALS } from '@/lib/goals'
+import { getGoals } from '@/lib/getGoals'
 import { Plus, Upload, Camera } from 'lucide-react'
 import WeightChart from '@/components/WeightChart'
 import WeekCharts from '../week/WeekCharts'
@@ -87,7 +87,7 @@ export default async function ProgressPage({
 }: {
   searchParams: Promise<{ tab?: string }>
 }) {
-  const { tab = 'nutrition' } = await searchParams
+  const [{ tab = 'nutrition' }, GOALS] = await Promise.all([searchParams, getGoals()])
   const activeTab = (tab === 'body' || tab === 'ask') ? tab : 'nutrition'
   // Nutrition query (last 7 days)
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
@@ -352,7 +352,7 @@ export default async function ProgressPage({
                       body_fat_pct: r.body_fat_pct,
                       lean_mass_kg: r.lean_mass_kg,
                     }))}
-                    goalWeight={kgToLbs(GOALS.weight_kg) ?? 0}
+                    goalWeight={GOALS.target_weight_lbs}
                   />
                   <div className="flex items-center gap-4 mt-3 pt-3 border-t border-line">
                     <div className="flex items-center gap-1.5"><div className="w-3 h-0.5 bg-brand rounded-full" /><span className="text-ink4 text-xs">Weight</span></div>
@@ -366,16 +366,16 @@ export default async function ProgressPage({
                   label="Weight"
                   value={kgToLbs(latest.weight_kg)?.toString() ?? '—'}
                   unit="lbs"
-                  goal={`${kgToLbs(GOALS.weight_kg)} lbs`}
-                  delta={latest.weight_kg != null ? kgToLbs(latest.weight_kg - GOALS.weight_kg) : null}
+                  goal={`${GOALS.target_weight_lbs} lbs`}
+                  delta={latest.weight_kg != null ? (kgToLbs(latest.weight_kg) ?? 0) - GOALS.target_weight_lbs : null}
                   positiveIsGood={false}
                 />
                 <GoalCard
                   label="Body Fat"
                   value={latest.body_fat_pct?.toFixed(1) ?? '—'}
                   unit="%"
-                  goal={`${GOALS.body_fat_pct}%`}
-                  delta={latest.body_fat_pct != null ? latest.body_fat_pct - GOALS.body_fat_pct : null}
+                  goal={`${GOALS.target_body_fat_pct}%`}
+                  delta={latest.body_fat_pct != null ? latest.body_fat_pct - GOALS.target_body_fat_pct : null}
                   positiveIsGood={false}
                 />
               </div>
@@ -388,8 +388,8 @@ export default async function ProgressPage({
                       weight: d.weight != null ? kgToLbs(d.weight) : null,
                       lean: d.lean != null ? kgToLbs(d.lean) : null,
                     }))}
-                    weightGoal={kgToLbs(GOALS.weight_kg) ?? 0}
-                    bfGoal={GOALS.body_fat_pct}
+                    weightGoal={GOALS.target_weight_lbs}
+                    bfGoal={GOALS.target_body_fat_pct}
                   />
                 </FramedCard>
               )}

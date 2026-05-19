@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { GOALS } from '@/lib/goals'
+import { getGoals } from '@/lib/getGoals'
 import { anthropic } from '@/lib/anthropic'
 
 export const maxDuration = 60
@@ -16,7 +16,8 @@ type GapAnalysis = {
 export async function GET() {
   const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000
 
-  const [nutritionResult, inbodyResult] = await Promise.all([
+  const [GOALS, nutritionResult, inbodyResult] = await Promise.all([
+    getGoals(),
     db.execute({
       sql: `SELECT date(logged_at/1000, 'unixepoch') as day, SUM(total_calories) as cal, SUM(total_protein) as prot FROM meals WHERE user_id = 'will' AND logged_at >= ? GROUP BY day ORDER BY day DESC`,
       args: [fourteenDaysAgo],
@@ -35,12 +36,15 @@ export async function GET() {
   const avgProt = daysWithData > 0 ? Math.round(nutritionRows.reduce((s, r) => s + Number(r.prot), 0) / daysWithData) : 0
 
   const latest = inbodyRows[0]
+  const kgToLbs = (kg: number) => Math.round(kg * 2.20462)
 
   const inbodyContext = inbodyRows.length > 0
     ? inbodyRows.map((r, i) => {
         const label = i === 0 ? 'Most recent' : `${i + 1} readings ago`
         const date = new Date(r.reading_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-        return `${label} (${date}): weight ${r.weight_kg ?? 'N/A'} kg, body fat ${r.body_fat_pct ?? 'N/A'}%, lean mass ${r.lean_mass_kg ?? 'N/A'} kg`
+        const weightLbs = r.weight_kg != null ? kgToLbs(r.weight_kg) : 'N/A'
+        const leanLbs = r.lean_mass_kg != null ? kgToLbs(r.lean_mass_kg) : 'N/A'
+        return `${label} (${date}): weight ${weightLbs} lbs, body fat ${r.body_fat_pct ?? 'N/A'}%, lean mass ${leanLbs} lbs`
       }).join('\n')
     : 'No InBody readings recorded yet'
 
@@ -48,20 +52,21 @@ export async function GET() {
     ? `${daysWithData} days logged in last 14 days\nAverage daily calories: ${avgCal} kcal (${Math.round((avgCal / GOALS.daily_calories) * 100)}% of ${GOALS.daily_calories} goal)\nAverage daily protein: ${avgProt}g (${Math.round((avgProt / GOALS.daily_protein_g) * 100)}% of ${GOALS.daily_protein_g}g goal)`
     : 'No meals logged in the last 14 days'
 
-  const weightDelta = latest?.weight_kg != null ? (latest.weight_kg - GOALS.weight_kg).toFixed(1) : null
-  const bfDelta = latest?.body_fat_pct != null ? (latest.body_fat_pct - GOALS.body_fat_pct).toFixed(1) : null
+  const currentWeightLbs = latest?.weight_kg != null ? kgToLbs(latest.weight_kg) : null
+  const weightDelta = currentWeightLbs != null ? currentWeightLbs - GOALS.target_weight_lbs : null
+  const bfDelta = latest?.body_fat_pct != null ? (latest.body_fat_pct - GOALS.target_body_fat_pct).toFixed(1) : null
 
   const prompt = `You are a precision body recomposition coach analyzing data for Will Bohlmann. Be direct, data-driven, and specific. No fluff.
 
 GOALS:
-- Target weight: ${GOALS.weight_kg} kg (180 lbs)
-- Target body fat: ${GOALS.body_fat_pct}%
+- Target weight: ${GOALS.target_weight_lbs} lbs
+- Target body fat: ${GOALS.target_body_fat_pct}%
 - Daily calories: ${GOALS.daily_calories} kcal
 - Daily protein: ${GOALS.daily_protein_g}g
 
 CURRENT BODY COMPOSITION (InBody readings):
 ${inbodyContext}
-${weightDelta ? `Weight gap: ${Number(weightDelta) > 0 ? '+' : ''}${weightDelta} kg from goal` : ''}
+${weightDelta != null ? `Weight gap: ${weightDelta > 0 ? '+' : ''}${weightDelta} lbs from goal` : ''}
 ${bfDelta ? `Body fat gap: ${Number(bfDelta) > 0 ? '+' : ''}${bfDelta}% from goal` : ''}
 
 NUTRITION (last 14 days):

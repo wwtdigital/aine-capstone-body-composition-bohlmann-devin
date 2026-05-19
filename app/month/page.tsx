@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { db } from '@/lib/db'
-import { GOALS } from '@/lib/goals'
+import { getGoals } from '@/lib/getGoals'
 import { Plus, Upload } from 'lucide-react'
 import BodyCompCharts from './BodyCompCharts'
 
@@ -13,20 +13,26 @@ type Reading = {
   lean_mass_kg: number | null
 }
 
+const kgToLbs = (kg: number | null | undefined) =>
+  kg != null ? Math.round(kg * 2.20462) : null
+
 export default async function MonthPage() {
-  const result = await db.execute({
-    sql: `SELECT reading_date, weight_kg, body_fat_pct, lean_mass_kg FROM inbody_readings WHERE user_id = 'will' ORDER BY reading_date ASC LIMIT 30`,
-    args: [],
-  })
+  const [GOALS, result] = await Promise.all([
+    getGoals(),
+    db.execute({
+      sql: `SELECT reading_date, weight_kg, body_fat_pct, lean_mass_kg FROM inbody_readings WHERE user_id = 'will' ORDER BY reading_date ASC LIMIT 30`,
+      args: [],
+    }),
+  ])
 
   const readings = result.rows as unknown as Reading[]
   const latest = readings[readings.length - 1]
 
   const chartData = readings.map(r => ({
     date: new Date(r.reading_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    weight: r.weight_kg,
+    weight: kgToLbs(r.weight_kg),
     bf: r.body_fat_pct,
-    lean: r.lean_mass_kg,
+    lean: kgToLbs(r.lean_mass_kg),
   }))
 
   return (
@@ -64,25 +70,25 @@ export default async function MonthPage() {
           <div className="grid grid-cols-2 gap-3">
             <GoalCard
               label="Weight"
-              value={latest.weight_kg?.toFixed(1) ?? '—'}
-              unit="kg"
-              goal={`${GOALS.weight_kg} kg`}
-              delta={latest.weight_kg != null ? latest.weight_kg - GOALS.weight_kg : null}
+              value={kgToLbs(latest.weight_kg)?.toString() ?? '—'}
+              unit="lbs"
+              goal={`${GOALS.target_weight_lbs} lbs`}
+              delta={latest.weight_kg != null ? (kgToLbs(latest.weight_kg) ?? 0) - GOALS.target_weight_lbs : null}
               positiveIsGood={false}
             />
             <GoalCard
               label="Body Fat"
               value={latest.body_fat_pct?.toFixed(1) ?? '—'}
               unit="%"
-              goal={`${GOALS.body_fat_pct}%`}
-              delta={latest.body_fat_pct != null ? latest.body_fat_pct - GOALS.body_fat_pct : null}
+              goal={`${GOALS.target_body_fat_pct}%`}
+              delta={latest.body_fat_pct != null ? latest.body_fat_pct - GOALS.target_body_fat_pct : null}
               positiveIsGood={false}
             />
           </div>
 
           {readings.length >= 2 && (
             <div className="bg-card rounded-2xl border border-line p-4">
-              <BodyCompCharts data={chartData} weightGoal={GOALS.weight_kg} bfGoal={GOALS.body_fat_pct} />
+              <BodyCompCharts data={chartData} weightGoal={GOALS.target_weight_lbs} bfGoal={GOALS.target_body_fat_pct} />
             </div>
           )}
 
@@ -93,9 +99,9 @@ export default async function MonthPage() {
                   {new Date(r.reading_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
                 <div className="flex gap-5">
-                  <Metric value={r.weight_kg?.toFixed(1)} unit="kg" />
+                  <Metric value={kgToLbs(r.weight_kg)?.toString()} unit="lbs" />
                   <Metric value={r.body_fat_pct?.toFixed(1)} unit="%" label="bf" />
-                  <Metric value={r.lean_mass_kg?.toFixed(1)} unit="" label="lean" />
+                  <Metric value={kgToLbs(r.lean_mass_kg)?.toString()} unit="" label="lean lbs" />
                 </div>
               </div>
             ))}
@@ -123,7 +129,7 @@ function GoalCard({
       <p className="text-ink3 text-xs mt-0.5">goal: {goal}</p>
       {delta != null && (
         <p className={`text-xs font-semibold mt-1.5 ${deltaColor}`}>
-          {delta > 0 ? '+' : ''}{delta.toFixed(1)}{unit}
+          {delta > 0 ? '+' : ''}{Math.round(Math.abs(delta))}{unit} {delta > 0 ? 'over' : 'to'} goal
         </p>
       )}
     </div>

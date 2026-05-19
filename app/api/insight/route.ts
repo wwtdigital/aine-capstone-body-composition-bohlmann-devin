@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { GOALS } from '@/lib/goals'
+import { getGoals } from '@/lib/getGoals'
 import { anthropic } from '@/lib/anthropic'
 
 export const maxDuration = 30
@@ -21,7 +21,8 @@ export async function GET() {
   const todayStart = new Date().setUTCHours(0, 0, 0, 0)
   const dayOfWeek = DAY_NAMES[new Date().getDay()]
 
-  const [nutritionAvgResult, todayNutritionResult, inbodyResult, whoopResult, workoutResult] = await Promise.all([
+  const [GOALS, nutritionAvgResult, todayNutritionResult, inbodyResult, whoopResult, workoutResult] = await Promise.all([
+    getGoals(),
     db.execute({
       sql: `SELECT
               ROUND(AVG(total_calories)) as avg_cal,
@@ -100,8 +101,7 @@ export async function GET() {
     }
     const weightLbs = latest.weight_kg != null ? kgToLbs(latest.weight_kg) : null
     const leanLbs = latest.lean_mass_kg != null ? kgToLbs(latest.lean_mass_kg) : null
-    const goalLbs = kgToLbs(GOALS.weight_kg)
-    lines.push(`Body comp: ${weightLbs}lbs${trend}, ${latest.body_fat_pct}% BF, ${leanLbs}lbs lean mass. Goal: ${goalLbs}lbs, ${GOALS.body_fat_pct}% BF.`)
+    lines.push(`Body comp: ${weightLbs}lbs${trend}, ${latest.body_fat_pct}% BF, ${leanLbs}lbs lean mass. Goal: ${GOALS.target_weight_lbs}lbs, ${GOALS.target_body_fat_pct}% BF.`)
   }
 
   if (whoopRows.length > 0) {

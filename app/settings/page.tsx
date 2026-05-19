@@ -9,32 +9,35 @@ import ISymbol from '@/components/ISymbol'
 import NotificationToggle from '@/components/NotificationToggle'
 
 type Goals = {
+  target_weight_lbs: number
+  target_body_fat_pct: number
+  target_lean_mass_kg: number
   daily_calories: number
   daily_protein_g: number
   daily_carbs_g: number
   daily_fat_g: number
-  target_body_fat_pct: number
-  target_lean_mass_kg: number
   daily_sleep_hours: number
 }
 
 const GOAL_DEFAULTS: Goals = {
+  target_weight_lbs: 180,
+  target_body_fat_pct: 12,
+  target_lean_mass_kg: 80,
   daily_calories: 2500,
   daily_protein_g: 200,
   daily_carbs_g: 200,
   daily_fat_g: 80,
-  target_body_fat_pct: 12,
-  target_lean_mass_kg: 80,
   daily_sleep_hours: 8,
 }
 
 const GOAL_FIELDS: { key: keyof Goals; label: string; step: number }[] = [
+  { key: 'target_weight_lbs',   label: 'Target Weight (lbs)', step: 1 },
+  { key: 'target_body_fat_pct', label: 'Target Body Fat (%)', step: 0.1 },
+  { key: 'target_lean_mass_kg', label: 'Target Lean Mass (kg)', step: 0.1 },
   { key: 'daily_calories',      label: 'Daily Calories',      step: 50 },
   { key: 'daily_protein_g',     label: 'Daily Protein (g)',   step: 1 },
   { key: 'daily_carbs_g',       label: 'Daily Carbs (g)',     step: 1 },
   { key: 'daily_fat_g',         label: 'Daily Fat (g)',       step: 1 },
-  { key: 'target_body_fat_pct', label: 'Target Body Fat (%)', step: 0.1 },
-  { key: 'target_lean_mass_kg', label: 'Target Lean Mass (kg)', step: 0.1 },
   { key: 'daily_sleep_hours',   label: 'Target Sleep (hrs)',  step: 0.5 },
 ]
 

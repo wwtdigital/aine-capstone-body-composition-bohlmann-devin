@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { GOALS } from '@/lib/goals'
+import { getGoals } from '@/lib/getGoals'
 import { anthropic } from '@/lib/anthropic'
 
 export const maxDuration = 45
@@ -36,7 +36,8 @@ export async function POST(request: NextRequest) {
 
   const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
 
-  const [mealsResult, inbodyResult, historyResult, whoopResult] = await Promise.all([
+  const [GOALS, mealsResult, inbodyResult, historyResult, whoopResult] = await Promise.all([
+    getGoals(),
     db.execute({
       sql: `SELECT date(logged_at/1000, 'unixepoch') as day, ROUND(SUM(total_calories)) as cal, ROUND(SUM(total_protein)) as prot, ROUND(SUM(total_carbs)) as carbs, ROUND(SUM(total_fat)) as fat, COUNT(*) as meals FROM meals WHERE user_id = 'will' AND logged_at >= ? GROUP BY day ORDER BY day DESC`,
       args: [thirtyDaysAgo],
@@ -84,8 +85,8 @@ Will is a hybrid athlete: 5x lifting + 3x soccer per week. Tailor advice to that
 You have memory of this conversation across sessions. Reference previous exchanges when relevant.
 
 WILL'S GOALS:
-- Target weight: ${GOALS.weight_kg} kg (180 lbs)
-- Target body fat: ${GOALS.body_fat_pct}%
+- Target weight: ${GOALS.target_weight_lbs} lbs
+- Target body fat: ${GOALS.target_body_fat_pct}%
 - Daily calorie target: ${GOALS.daily_calories} kcal
 - Daily protein target: ${GOALS.daily_protein_g}g
 
