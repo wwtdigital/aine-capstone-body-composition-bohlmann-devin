@@ -2,7 +2,8 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Activity, CheckCircle, AlertCircle, RefreshCw, Unlink, ExternalLink, Zap } from 'lucide-react'
+import Link from 'next/link'
+import { Activity, CheckCircle, AlertCircle, RefreshCw, Unlink, ExternalLink, Zap, Layers, ChevronRight } from 'lucide-react'
 import { useTheme } from '@/components/ThemeProvider'
 import FramedCard from '@/components/FramedCard'
 import ISymbol from '@/components/ISymbol'
@@ -483,6 +484,23 @@ function SettingsContent() {
             </FramedCard>
           </div>
         )}
+
+        {/* Tools */}
+        <div>
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <ISymbol size={14} className="text-ink3 opacity-60" />
+            <span className="eyebrow">Tools</span>
+          </div>
+          <FramedCard className="bg-card rounded-2xl border border-line divide-y divide-line">
+            <Link href="/muscles" className="flex items-center justify-between px-4 py-3 active:bg-surface transition-colors">
+              <div className="flex items-center gap-3">
+                <Layers size={16} className="text-ink3" />
+                <span className="text-ink text-sm font-medium">Muscle Map</span>
+              </div>
+              <ChevronRight size={16} className="text-ink4" />
+            </Link>
+          </FramedCard>
+        </div>
 
         {/* Personal Context */}
         <PersonalContextSection />

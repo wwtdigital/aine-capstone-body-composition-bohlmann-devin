@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { RotateCcw, Camera, X } from 'lucide-react'
+import { RotateCcw, Camera, X, Pencil, Trash2, Check } from 'lucide-react'
 import FramedCard from '@/components/FramedCard'
 
 type MealItem = {
@@ -17,6 +17,16 @@ type MealItem = {
 }
 
 type Step = 'capture' | 'analyzing' | 'confirm' | 'saving' | 'error'
+
+type SavedMeal = {
+  id: string
+  logged_at: number
+  total_calories: number
+  total_protein: number
+  total_carbs: number
+  total_fat: number
+  items_json: string | null
+}
 
 const PHOTO_LOADING_MESSAGES = [
   'Reading the plate...',
@@ -77,9 +87,63 @@ export default function LogPage() {
   const [errorMsg, setErrorMsg] = useState('')
   const [loadingText, setLoadingText] = useState(PHOTO_LOADING_MESSAGES[0])
   const [loggedAt] = useState(() => Date.now())
+  const [todayMeals, setTodayMeals] = useState<SavedMeal[]>([])
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editMacros, setEditMacros] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 })
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
   const fileRef = useRef<HTMLInputElement>(null)
   const loadingInterval = useRef<ReturnType<typeof setInterval> | null>(null)
   const router = useRouter()
+
+  async function fetchTodayMeals() {
+    try {
+      const res = await fetch('/api/meals')
+      if (!res.ok) return
+      const all: SavedMeal[] = await res.json()
+      const todayStr = new Date().toISOString().split('T')[0]
+      setTodayMeals(
+        all.filter(m => new Date(m.logged_at).toISOString().split('T')[0] === todayStr)
+      )
+    } catch { /* silent */ }
+  }
+
+  async function handleDeleteMeal(id: string) {
+    setDeletingId(id)
+    try {
+      await fetch(`/api/meals/${id}`, { method: 'DELETE' })
+      await fetchTodayMeals()
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  function startEdit(meal: SavedMeal) {
+    setEditingId(meal.id)
+    setEditMacros({
+      calories: Math.round(Number(meal.total_calories)),
+      protein: Math.round(Number(meal.total_protein)),
+      carbs: Math.round(Number(meal.total_carbs)),
+      fat: Math.round(Number(meal.total_fat)),
+    })
+  }
+
+  async function handleSaveEdit(id: string) {
+    await fetch(`/api/meals/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        total_calories: editMacros.calories,
+        total_protein: editMacros.protein,
+        total_carbs: editMacros.carbs,
+        total_fat: editMacros.fat,
+      }),
+    })
+    setEditingId(null)
+    await fetchTodayMeals()
+  }
+
+  useEffect(() => { fetchTodayMeals() }, [])
 
   useEffect(() => {
     if (step === 'analyzing') {
@@ -248,6 +312,84 @@ export default function LogPage() {
             </div>
           )}
         </div>
+
+        {todayMeals.length > 0 && (
+          <div className="px-4 mt-8">
+            <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-3">Today&apos;s meals</p>
+            <div className="space-y-2">
+              {todayMeals.map(meal => {
+                const time = new Date(meal.logged_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                const isEditing = editingId === meal.id
+                const isDeleting = deletingId === meal.id
+
+                return (
+                  <FramedCard key={meal.id} className="bg-card rounded-2xl border border-line p-4">
+                    {isEditing ? (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-4 gap-2">
+                          {(['calories', 'protein', 'carbs', 'fat'] as const).map(field => (
+                            <div key={field} className="text-center">
+                              <p className="text-ink4 text-[10px] mb-1">
+                                {field === 'calories' ? 'Cal' : field === 'protein' ? 'Pro' : field === 'carbs' ? 'Carb' : 'Fat'}
+                              </p>
+                              <input
+                                type="number"
+                                value={editMacros[field]}
+                                onChange={e => setEditMacros(prev => ({ ...prev, [field]: Number(e.target.value) }))}
+                                className="w-full bg-surface rounded-lg px-1 py-1.5 text-ink text-sm font-medium focus:outline-none text-center border border-line"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleSaveEdit(meal.id)}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-brand text-page text-sm font-semibold active:scale-95 transition-transform"
+                          >
+                            <Check size={14} /> Save
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="flex-1 py-2 rounded-xl bg-surface border border-line text-ink3 text-sm font-medium active:scale-95 transition-transform"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-ink3 text-xs mb-0.5">{time}</p>
+                          <div className="flex items-center gap-3 tabular-nums">
+                            <span className="text-ink font-semibold text-sm">{Math.round(Number(meal.total_calories))} cal</span>
+                            <span className="text-ok text-sm">{Math.round(Number(meal.total_protein))}g P</span>
+                            <span className="text-amber-500 text-sm">{Math.round(Number(meal.total_carbs))}g C</span>
+                            <span className="text-purple-400 text-sm">{Math.round(Number(meal.total_fat))}g F</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => startEdit(meal)}
+                            className="w-8 h-8 flex items-center justify-center text-ink3 hover:text-ink active:scale-90 transition-transform"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteMeal(meal.id)}
+                            disabled={isDeleting}
+                            className="w-8 h-8 flex items-center justify-center text-bad/70 hover:text-bad active:scale-90 transition-transform disabled:opacity-40"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </FramedCard>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
     )
   }

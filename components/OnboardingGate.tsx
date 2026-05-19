@@ -6,9 +6,9 @@ export default function OnboardingGate() {
   useEffect(() => {
     if (window.location.pathname === '/onboarding') return
     fetch('/api/onboarding')
-      .then(r => r.json())
-      .then((data: { completed: boolean }) => {
-        if (!data.completed) {
+      .then(r => (r.ok ? r.json() : null))
+      .then((data: { completed: boolean } | null) => {
+        if (data && !data.completed) {
           window.location.replace('/onboarding')
         }
       })

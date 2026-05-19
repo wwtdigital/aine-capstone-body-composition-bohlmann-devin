@@ -73,10 +73,12 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ id, ok: true })
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  const limit = Math.min(parseInt(searchParams.get('limit') ?? '200', 10), 500)
   const result = await db.execute({
-    sql: `SELECT * FROM meals WHERE user_id = ? ORDER BY logged_at DESC LIMIT 50`,
-    args: [USER_ID],
+    sql: `SELECT id, logged_at, total_calories, total_protein, total_carbs, total_fat, items_json FROM meals WHERE user_id = ? ORDER BY logged_at DESC LIMIT ?`,
+    args: [USER_ID, limit],
   })
   return NextResponse.json(result.rows)
 }

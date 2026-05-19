@@ -2,13 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, PenLine, TrendingUp, Layers, Settings } from 'lucide-react'
+import { Home, PenLine, TrendingUp, Clock, Settings } from 'lucide-react'
 
 const tabs = [
   { href: '/', icon: Home, label: 'Today' },
   { href: '/log', icon: PenLine, label: 'Log' },
   { href: '/progress', icon: TrendingUp, label: 'Progress' },
-  { href: '/muscles', icon: Layers, label: 'Muscles' },
+  { href: '/history', icon: Clock, label: 'History' },
   { href: '/settings', icon: Settings, label: 'Settings' },
 ]
 
