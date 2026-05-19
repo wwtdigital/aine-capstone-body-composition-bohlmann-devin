@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getSessionToken, SESSION_COOKIE, SESSION_MAX_AGE } from '@/lib/session'
 
 export async function POST(request: NextRequest) {
   const { password } = await request.json()
@@ -7,12 +8,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid password' }, { status: 401 })
   }
 
+  const token = await getSessionToken()
   const res = NextResponse.json({ ok: true })
-  res.cookies.set('bcc_session', process.env.APP_PASSWORD!, {
+  res.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
-    maxAge: 60 * 60 * 24 * 30,
+    maxAge: SESSION_MAX_AGE,
     path: '/',
   })
   return res
