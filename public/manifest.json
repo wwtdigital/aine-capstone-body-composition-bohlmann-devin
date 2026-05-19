@@ -1,7 +1,7 @@
 {
-  "name": "Body Composition Copilot",
-  "short_name": "BCC",
-  "description": "AI-powered body composition tracking with nutrition, recovery, and gap analysis",
+  "name": "Frame",
+  "short_name": "Frame",
+  "description": "Body composition coaching, powered by AI",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#09090b",

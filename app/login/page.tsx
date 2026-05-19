@@ -50,11 +50,11 @@ function LoginForm() {
 
           <div className="flex items-center gap-2 mb-6">
             <ISymbol size={14} className="text-brand opacity-80" />
-            <span className="eyebrow text-brand">Body Comp Copilot</span>
+            <span className="eyebrow text-brand">Frame</span>
           </div>
 
           <h1 className="text-2xl font-semibold text-ink tracking-tight mb-1">Welcome back</h1>
-          <p className="text-ink4 text-sm mb-8">Personal dashboard — enter password to continue.</p>
+          <p className="text-ink4 text-sm mb-8">Enter your password to continue.</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <input

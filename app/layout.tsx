@@ -21,13 +21,13 @@ const mono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Body Composition Copilot',
-  description: 'Personal body recomposition dashboard',
+  title: 'Frame',
+  description: 'Body composition coaching, powered by AI',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'BCC',
+    title: 'Frame',
   },
 }
 

@@ -44,18 +44,17 @@ export default function Icon() {
               background: 'rgba(255,255,255,0.9)',
             }}
           />
-          {/* BCC text */}
           <div
             style={{
-              fontSize: 72,
+              fontSize: 80,
               fontWeight: 900,
               color: 'white',
-              letterSpacing: -2,
+              letterSpacing: -3,
               marginTop: 16,
               fontFamily: 'sans-serif',
             }}
           >
-            BCC
+            Fr
           </div>
         </div>
       </div>
