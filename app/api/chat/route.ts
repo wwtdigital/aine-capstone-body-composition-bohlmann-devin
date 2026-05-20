@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
   const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
 
-  const [GOALS, personalContext, mealsResult, inbodyResult, historyResult, whoopResult, workoutResult] = await Promise.all([
+  const [GOALS, personalContext, mealsResult, inbodyResult, historyResult, whoopResult, workoutResult, firstMealDateResult] = await Promise.all([
     getGoals(),
     getPersonalContext(),
     db.execute({
@@ -58,8 +58,12 @@ export async function POST(request: NextRequest) {
       args: [USER_ID],
     }),
     db.execute({
-      sql: `SELECT session_type, duration_minutes, notes, strain, date(logged_at/1000, 'unixepoch') as day FROM workout_sessions WHERE user_id = ? AND logged_at >= ? ORDER BY logged_at DESC LIMIT 14`,
+      sql: `SELECT session_type, duration_minutes, notes, date(logged_at/1000, 'unixepoch') as day FROM workout_sessions WHERE user_id = ? AND logged_at >= ? ORDER BY logged_at DESC LIMIT 14`,
       args: [USER_ID, thirtyDaysAgo],
+    }),
+    db.execute({
+      sql: `SELECT MIN(date(logged_at/1000, 'unixepoch')) as first_day FROM meals WHERE user_id = ?`,
+      args: [USER_ID],
     }),
   ])
 
@@ -68,6 +72,7 @@ export async function POST(request: NextRequest) {
   const historyRows = historyResult.rows as unknown as { role: string; content: string }[]
   const whoopRow = (whoopResult.rows as unknown as { recovery_score: number | null; strain: number | null; hrv_ms: number | null; sleep_minutes: number | null }[])[0] ?? null
   const workoutRows = workoutResult.rows as unknown as { session_type: string; duration_minutes: number | null; notes: string | null; strain: number | null; day: string }[]
+  const firstMealDate = (firstMealDateResult.rows[0] as unknown as { first_day: string | null })?.first_day ?? null
 
   const nutritionSummary = mealRows.length > 0
     ? mealRows.slice(0, 14).map(r =>
@@ -119,6 +124,8 @@ ${workoutSummary}
 
 NUTRITION LOG (last 14 logged days, most recent first):
 ${nutritionSummary}
+
+TRACKING START DATE: ${firstMealDate ?? 'unknown'} — nutrition data only exists from this date forward. Do not treat missing data before this date as a logging gap or poor adherence.
 
 Keep responses concise — 2-4 sentences unless detail is requested. Use his actual numbers. Don't hedge or add disclaimers. If data is missing, say so plainly.`
 

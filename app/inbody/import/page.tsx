@@ -44,15 +44,16 @@ export default function InBodyImportPage() {
       formData.append('file', file)
       try {
         const res = await fetch('/api/inbody/parse', { method: 'POST', body: formData })
-        const data = await res.json()
         if (!res.ok) {
+          const data = await res.json().catch(() => ({})) as { error?: string }
           results.push({
             reading_date: null, weight_kg: null, body_fat_pct: null,
             lean_mass_kg: null, body_water_kg: null, visceral_fat_level: null,
             raw_extracted_json: '', filename: file.name,
-            accepted: false, error: data.error ?? 'Parse failed',
+            accepted: false, error: data.error ?? `Error ${res.status}`,
           })
         } else {
+          const data = await res.json()
           results.push({ ...data, filename: file.name, accepted: true })
         }
       } catch {
@@ -60,7 +61,7 @@ export default function InBodyImportPage() {
           reading_date: null, weight_kg: null, body_fat_pct: null,
           lean_mass_kg: null, body_water_kg: null, visceral_fat_level: null,
           raw_extracted_json: '', filename: file.name,
-          accepted: false, error: 'Connection error',
+          accepted: false, error: 'Connection error — try again',
         })
       }
       setParseProgress(p => ({ ...p, done: p.done + 1 }))

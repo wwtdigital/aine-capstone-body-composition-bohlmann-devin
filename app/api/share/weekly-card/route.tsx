@@ -19,7 +19,7 @@ export async function GET() {
 
   const [workoutResult, whoopResult] = await Promise.all([
     db.execute({
-      sql: `SELECT session_type, duration_minutes, strain FROM workout_sessions WHERE user_id = ? AND logged_at >= ? ORDER BY logged_at DESC`,
+      sql: `SELECT session_type, duration_minutes FROM workout_sessions WHERE user_id = ? AND logged_at >= ? ORDER BY logged_at DESC`,
       args: [USER_ID, sevenDaysAgo],
     }),
     db.execute({

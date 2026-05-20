@@ -74,6 +74,8 @@ export default async function Today() {
     const v = whoopWeek.map(r => r.hrv_ms).filter((x): x is number => x != null)
     return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null
   })()
+  const hrvNonNullCount = whoopWeek.filter(r => r.hrv_ms != null).length
+  const sleepNonNullCount = whoopWeek.filter(r => r.sleep_minutes != null).length
 
   // 7-day adherence: build array for last 7 calendar days
   const calMap: Record<string, number> = {}
@@ -214,17 +216,21 @@ export default async function Today() {
           ))}
         </div>
 
-        {/* 7-day HRV */}
-        <div className="mt-3 pt-3 border-t border-line">
-          <p className="eyebrow mb-2">HRV 7-day</p>
-          <HrvWeekBars values={whoop ? [...whoopWeek].reverse().map(r => r.hrv_ms) : null} avg={hrv7DayAvg} muted={!whoop} />
-        </div>
+        {/* 7-day HRV — only render when we have real data or are in demo mode */}
+        {(!whoop || hrvNonNullCount >= 3) && (
+          <div className="mt-3 pt-3 border-t border-line">
+            <p className="eyebrow mb-2">HRV 7-day</p>
+            <HrvWeekBars values={whoop ? [...whoopWeek].reverse().map(r => r.hrv_ms) : null} avg={hrv7DayAvg} muted={!whoop} />
+          </div>
+        )}
 
-        {/* 7-day sleep */}
-        <div className="mt-3 pt-3 border-t border-line">
-          <p className="eyebrow mb-2">Sleep</p>
-          <SleepWeekBars values={whoop ? sleepValues : null} muted={!whoop} />
-        </div>
+        {/* 7-day sleep — only render when we have real data or are in demo mode */}
+        {(!whoop || sleepNonNullCount >= 3) && (
+          <div className="mt-3 pt-3 border-t border-line">
+            <p className="eyebrow mb-2">Sleep</p>
+            <SleepWeekBars values={whoop ? sleepValues : null} muted={!whoop} />
+          </div>
+        )}
       </FramedCard>
 
       {/* Section 3: Nutrition */}

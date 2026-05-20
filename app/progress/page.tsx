@@ -220,7 +220,10 @@ export default async function ProgressPage({
           </div>
 
           <FramedCard className="bg-card rounded-2xl border border-line p-4">
-            <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-3">Today&apos;s Macro Split</p>
+            <div className="flex items-center gap-2 mb-3">
+              <ISymbol size={14} className="text-ink3 opacity-60" />
+              <span className="eyebrow">Today&apos;s Macro Split</span>
+            </div>
             <MacroRadial
               calories={Math.round(todayN.cal)}
               protein={Math.round(todayN.prot)}

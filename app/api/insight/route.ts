@@ -22,7 +22,7 @@ export async function GET() {
   const todayStart = new Date().setUTCHours(0, 0, 0, 0)
   const dayOfWeek = DAY_NAMES[new Date().getDay()]
 
-  const [GOALS, personalContext, nutritionAvgResult, todayNutritionResult, inbodyResult, whoopResult, workoutResult] = await Promise.all([
+  const [GOALS, personalContext, nutritionAvgResult, todayNutritionResult, inbodyResult, whoopResult, workoutResult, firstMealDateResult] = await Promise.all([
     getGoals(),
     getPersonalContext(),
     db.execute({
@@ -60,6 +60,10 @@ export async function GET() {
             ORDER BY logged_at DESC LIMIT 5`,
       args: [USER_ID, sevenDaysAgo],
     }),
+    db.execute({
+      sql: `SELECT MIN(date(logged_at/1000, 'unixepoch')) as first_day FROM meals WHERE user_id = ?`,
+      args: [USER_ID],
+    }),
   ])
 
   const avgN = nutritionAvgResult.rows[0] as any
@@ -67,6 +71,7 @@ export async function GET() {
   const inbody = inbodyResult.rows as any[]
   const whoopRows = whoopResult.rows as any[]
   const workouts = workoutResult.rows as any[]
+  const firstMealDate = (firstMealDateResult.rows[0] as any)?.first_day ?? null
 
   const hasAnyData = avgN?.days_logged > 0 || inbody.length > 0 || whoopRows.length > 0
 
@@ -79,6 +84,10 @@ export async function GET() {
 
   // Build context for Claude
   const lines: string[] = [`Today is ${dayOfWeek}.`]
+
+  if (firstMealDate) {
+    lines.push(`Tracking start date: ${firstMealDate}. Only evaluate adherence from this date forward — do not treat earlier dates as logging gaps.`)
+  }
 
   if (avgN?.days_logged > 0) {
     lines.push(`Nutrition (7-day avg): ${avgN.avg_cal} kcal/day (goal: ${GOALS.daily_calories}), ${avgN.avg_prot}g protein/day (goal: ${GOALS.daily_protein_g}g). Logged ${avgN.days_logged}/7 days.`)
