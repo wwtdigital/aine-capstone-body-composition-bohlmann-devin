@@ -4,13 +4,26 @@ import { useState, FormEvent, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Upload, Loader } from 'lucide-react'
 
+const LBS_PER_KG = 2.20462
+
+function kgToLbs(kg: number | null): string {
+  if (kg == null) return ''
+  return String(Math.round(kg * LBS_PER_KG * 10) / 10)
+}
+
+function lbsToKg(lbs: string): number | null {
+  const n = parseFloat(lbs)
+  if (isNaN(n)) return null
+  return Math.round((n / LBS_PER_KG) * 100) / 100
+}
+
 export default function InBodyNewPage() {
   const [fields, setFields] = useState({
     reading_date: new Date().toISOString().split('T')[0],
-    weight_kg: '',
+    weight_lbs: '',
     body_fat_pct: '',
-    lean_mass_kg: '',
-    body_water_kg: '',
+    lean_mass_lbs: '',
+    body_water_lbs: '',
     visceral_fat_level: '',
   })
   const [saving, setSaving] = useState(false)
@@ -22,21 +35,25 @@ export default function InBodyNewPage() {
 
   async function handleScan(file: File) {
     setScanning(true)
-    setScanMsg('Reading PDF...')
+    setScanMsg('Reading file...')
     setError('')
     const formData = new FormData()
     formData.append('file', file)
     try {
       const res = await fetch('/api/inbody/parse', { method: 'POST', body: formData })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({})) as { error?: string }
+        setError(data.error ?? 'Could not extract data from this file.')
+        return
+      }
       const data = await res.json()
-      if (!res.ok) { setError(data.error ?? 'Could not extract data from this file.'); return }
       setScanMsg('Fields extracted — review below')
       setFields(prev => ({
         reading_date: data.reading_date ?? prev.reading_date,
-        weight_kg: data.weight_kg != null ? String(data.weight_kg) : prev.weight_kg,
+        weight_lbs: data.weight_kg != null ? kgToLbs(data.weight_kg) : prev.weight_lbs,
         body_fat_pct: data.body_fat_pct != null ? String(data.body_fat_pct) : prev.body_fat_pct,
-        lean_mass_kg: data.lean_mass_kg != null ? String(data.lean_mass_kg) : prev.lean_mass_kg,
-        body_water_kg: data.body_water_kg != null ? String(data.body_water_kg) : prev.body_water_kg,
+        lean_mass_lbs: data.lean_mass_kg != null ? kgToLbs(data.lean_mass_kg) : prev.lean_mass_lbs,
+        body_water_lbs: data.body_water_kg != null ? kgToLbs(data.body_water_kg) : prev.body_water_lbs,
         visceral_fat_level: data.visceral_fat_level != null ? String(data.visceral_fat_level) : prev.visceral_fat_level,
       }))
     } catch {
@@ -57,10 +74,10 @@ export default function InBodyNewPage() {
 
     const body = {
       reading_date: fields.reading_date,
-      weight_kg: fields.weight_kg ? Number(fields.weight_kg) : null,
+      weight_kg: lbsToKg(fields.weight_lbs),
       body_fat_pct: fields.body_fat_pct ? Number(fields.body_fat_pct) : null,
-      lean_mass_kg: fields.lean_mass_kg ? Number(fields.lean_mass_kg) : null,
-      body_water_kg: fields.body_water_kg ? Number(fields.body_water_kg) : null,
+      lean_mass_kg: lbsToKg(fields.lean_mass_lbs),
+      body_water_kg: lbsToKg(fields.body_water_lbs),
       visceral_fat_level: fields.visceral_fat_level ? Number(fields.visceral_fat_level) : null,
       source: 'manual',
     }
@@ -93,7 +110,6 @@ export default function InBodyNewPage() {
         <p className="text-ink3 text-sm">InBody measurement</p>
       </div>
 
-      {/* PDF scan */}
       <div className="px-4 mb-4">
         <input
           ref={fileRef}
@@ -128,17 +144,17 @@ export default function InBodyNewPage() {
         </div>
 
         {[
-          { field: 'weight_kg', label: 'Weight (kg)' },
-          { field: 'body_fat_pct', label: 'Body Fat (%)' },
-          { field: 'lean_mass_kg', label: 'Lean Mass (kg)' },
-          { field: 'body_water_kg', label: 'Body Water (kg)' },
-          { field: 'visceral_fat_level', label: 'Visceral Fat Level' },
-        ].map(({ field, label }) => (
+          { field: 'weight_lbs',        label: 'Weight (lbs)',        step: '0.5' },
+          { field: 'body_fat_pct',      label: 'Body Fat (%)',        step: '0.1' },
+          { field: 'lean_mass_lbs',     label: 'Lean Mass (lbs)',     step: '0.5' },
+          { field: 'body_water_lbs',    label: 'Body Water (lbs)',    step: '0.5' },
+          { field: 'visceral_fat_level', label: 'Visceral Fat Level', step: '1'   },
+        ].map(({ field, label, step }) => (
           <div key={field}>
             <label className="text-ink3 text-xs font-semibold uppercase tracking-wider block mb-2">{label}</label>
             <input
               type="number"
-              step="0.1"
+              step={step}
               value={fields[field as keyof typeof fields]}
               onChange={e => set(field, e.target.value)}
               placeholder="—"

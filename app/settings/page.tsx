@@ -10,37 +10,32 @@ import ISymbol from '@/components/ISymbol'
 import NotificationToggle from '@/components/NotificationToggle'
 
 type Goals = {
+  current_weight_lbs: number
   target_weight_lbs: number
-  target_body_fat_pct: number
-  target_lean_mass_kg: number
+  tdee_calories: number
+  calorie_deficit_surplus: number
   daily_calories: number
   daily_protein_g: number
+  daily_sleep_hours: number
+  target_body_fat_pct: number
+  target_lean_mass_kg: number
   daily_carbs_g: number
   daily_fat_g: number
-  daily_sleep_hours: number
 }
 
 const GOAL_DEFAULTS: Goals = {
+  current_weight_lbs: 185,
   target_weight_lbs: 180,
-  target_body_fat_pct: 12,
-  target_lean_mass_kg: 80,
+  tdee_calories: 2800,
+  calorie_deficit_surplus: -300,
   daily_calories: 2500,
   daily_protein_g: 200,
+  daily_sleep_hours: 8,
+  target_body_fat_pct: 12,
+  target_lean_mass_kg: 80,
   daily_carbs_g: 200,
   daily_fat_g: 80,
-  daily_sleep_hours: 8,
 }
-
-const GOAL_FIELDS: { key: keyof Goals; label: string; step: number }[] = [
-  { key: 'target_weight_lbs',   label: 'Target Weight (lbs)', step: 1 },
-  { key: 'target_body_fat_pct', label: 'Target Body Fat (%)', step: 0.1 },
-  { key: 'target_lean_mass_kg', label: 'Target Lean Mass (kg)', step: 0.1 },
-  { key: 'daily_calories',      label: 'Daily Calories',      step: 50 },
-  { key: 'daily_protein_g',     label: 'Daily Protein (g)',   step: 1 },
-  { key: 'daily_carbs_g',       label: 'Daily Carbs (g)',     step: 1 },
-  { key: 'daily_fat_g',         label: 'Daily Fat (g)',       step: 1 },
-  { key: 'daily_sleep_hours',   label: 'Target Sleep (hrs)',  step: 0.5 },
-]
 
 const ACCENT_OPTIONS: { value: string; color: string }[] = [
   { value: 'blue',   color: '#4a9eff' },
@@ -187,6 +182,24 @@ function GoalsSection() {
     setTimeout(() => setSaveState('idle'), 2500)
   }
 
+  const computedCals = Math.round(goals.tdee_calories + goals.calorie_deficit_surplus)
+  const isDeficit = goals.calorie_deficit_surplus < 0
+
+  function numField(key: keyof Goals, label: string, step: number) {
+    return (
+      <div key={key}>
+        <label className="text-ink3 text-xs font-medium block mb-1">{label}</label>
+        <input
+          type="number"
+          step={step}
+          value={goals[key]}
+          onChange={e => setGoals(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))}
+          className="w-full bg-surface rounded-xl px-4 py-3 text-ink border border-line focus:outline-none"
+        />
+      </div>
+    )
+  }
+
   return (
     <div>
       <div className="flex items-center gap-2 mb-2 px-1">
@@ -198,18 +211,37 @@ function GoalsSection() {
           <div className="h-48 bg-surface rounded-xl animate-pulse" />
         ) : (
           <>
-            {GOAL_FIELDS.map(({ key, label, step }) => (
-              <div key={key}>
-                <label className="text-ink3 text-xs font-medium block mb-1">{label}</label>
-                <input
-                  type="number"
-                  step={step}
-                  value={goals[key]}
-                  onChange={e => setGoals(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))}
-                  className="w-full bg-surface rounded-xl px-4 py-3 text-ink border border-line focus:outline-none"
-                />
-              </div>
-            ))}
+            {numField('current_weight_lbs', 'Current Weight (lbs)', 0.5)}
+            {numField('target_weight_lbs',  'Target Weight (lbs)',  0.5)}
+            {numField('tdee_calories',       'Avg Calories Burned / Day (TDEE)', 50)}
+            <div>
+              <label className="text-ink3 text-xs font-medium block mb-1">
+                Target {isDeficit ? 'Deficit' : 'Surplus'} (kcal/day)
+              </label>
+              <input
+                type="number"
+                step={50}
+                value={goals.calorie_deficit_surplus}
+                onChange={e => setGoals(prev => ({ ...prev, calorie_deficit_surplus: parseFloat(e.target.value) || 0 }))}
+                className="w-full bg-surface rounded-xl px-4 py-3 text-ink border border-line focus:outline-none"
+                placeholder="e.g. -300 for cut, +200 for bulk"
+              />
+              <p className="text-ink3 text-xs mt-1">
+                Negative = deficit (cut), positive = surplus (bulk)
+              </p>
+            </div>
+            {/* Computed calorie target */}
+            <div className="bg-surface rounded-xl px-4 py-3 flex justify-between items-center">
+              <span className="text-ink3 text-xs font-medium">Daily Calorie Target</span>
+              <span className="text-ink font-bold tabular-nums">
+                {computedCals} kcal
+                <span className="text-ink3 font-normal text-xs ml-1">
+                  ({goals.tdee_calories} {isDeficit ? '−' : '+'} {Math.abs(goals.calorie_deficit_surplus)})
+                </span>
+              </span>
+            </div>
+            {numField('daily_protein_g',  'Protein Goal (g)',   1)}
+            {numField('daily_sleep_hours','Sleep Goal (hrs)',   0.5)}
             <button
               onClick={handleSave}
               disabled={saveState === 'saving'}
@@ -217,12 +249,8 @@ function GoalsSection() {
             >
               {saveState === 'saving' ? 'Saving… ›' : 'Save Goals ›'}
             </button>
-            {saveState === 'saved' && (
-              <p className="text-ok text-xs text-center font-medium">Saved</p>
-            )}
-            {saveState === 'error' && (
-              <p className="text-bad text-xs text-center">Failed to save. Try again.</p>
-            )}
+            {saveState === 'saved' && <p className="text-ok text-xs text-center font-medium">Saved</p>}
+            {saveState === 'error' && <p className="text-bad text-xs text-center">Failed to save. Try again.</p>}
           </>
         )}
       </FramedCard>

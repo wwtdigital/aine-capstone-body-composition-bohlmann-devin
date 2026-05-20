@@ -8,7 +8,6 @@ import WeekCharts from '../week/WeekCharts'
 import BodyCompCharts from '../month/BodyCompCharts'
 import HrvChart from './HrvChart'
 import MacroRadial from '@/components/MacroRadial'
-import BodyBattery from '@/components/BodyBattery'
 import FramedCard from '@/components/FramedCard'
 import ISymbol from '@/components/ISymbol'
 import GapAnalysis from '@/components/GapAnalysis'
@@ -234,9 +233,6 @@ export default async function ProgressPage({
             />
           </FramedCard>
 
-          <FramedCard className="bg-card rounded-2xl border border-line p-4">
-            <BodyBattery />
-          </FramedCard>
 
           {daysWithData.length === 0 ? (
             <Link href="/log" className="block">
