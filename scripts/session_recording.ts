@@ -333,7 +333,7 @@ async function main() {
     if (err instanceof Error) {
       failedError = err.message;
       // Try to extract the step from stack or rethrow context
-      const currentPageUrl = await page.url().catch(() => "unknown");
+      const currentPageUrl = page.url();
       failedStep = currentPageUrl;
       log("SESSION FAILED", `at ${currentPageUrl} — ${err.message}`);
     }
