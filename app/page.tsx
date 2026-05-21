@@ -6,6 +6,7 @@ import MacroRing from '@/components/MacroRing'
 import MealList from '@/components/MealSheet'
 import DailyInsight from '@/components/DailyInsight'
 import { Dumbbell, AlertTriangle, CheckCircle, AlertCircle } from 'lucide-react'
+import ProteinTimingCard from '@/components/ProteinTimingCard'
 import FramedCard from '@/components/FramedCard'
 import ISymbol from '@/components/ISymbol'
 
@@ -316,6 +317,11 @@ export default async function Today() {
           <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-surface" /><span className="text-ink3 text-xs">&lt;50%</span></div>
         </div>
       </FramedCard>
+
+      {/* Protein Timing */}
+      <div className="px-4 mt-4">
+        <ProteinTimingCard />
+      </div>
 
       {/* Section 4: Body Composition */}
       {latest ? (

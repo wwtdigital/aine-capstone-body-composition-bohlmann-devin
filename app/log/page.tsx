@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { RotateCcw, Camera, X, Pencil, Trash2, Check } from 'lucide-react'
+import { RotateCcw, Camera, X, Pencil, Trash2, Check, BookmarkPlus, Zap } from 'lucide-react'
 import FramedCard from '@/components/FramedCard'
 
 type MealItem = {
@@ -16,7 +16,18 @@ type MealItem = {
   confidence: 'low' | 'medium' | 'high'
 }
 
-type Step = 'capture' | 'analyzing' | 'confirm' | 'saving' | 'error'
+type Step = 'capture' | 'analyzing' | 'confirm' | 'saving' | 'saved' | 'error'
+
+type MealTemplate = {
+  id: string
+  name: string
+  total_calories: number
+  total_protein: number
+  total_carbs: number
+  total_fat: number
+  items_json: string | null
+  use_count: number
+}
 
 type SavedMeal = {
   id: string
@@ -92,10 +103,60 @@ export default function LogPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editMacros, setEditMacros] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 })
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [templates, setTemplates] = useState<MealTemplate[]>([])
+  const [showTemplateForm, setShowTemplateForm] = useState(false)
+  const [templateName, setTemplateName] = useState('')
+  const [savingTemplate, setSavingTemplate] = useState(false)
+  const [quickLoggingId, setQuickLoggingId] = useState<string | null>(null)
+  const [lastSavedMacros, setLastSavedMacros] = useState<{ calories: number; protein: number; carbs: number; fat: number } | null>(null)
+  const [lastSavedItems, setLastSavedItems] = useState<MealItem[]>([])
 
   const fileRef = useRef<HTMLInputElement>(null)
   const loadingInterval = useRef<ReturnType<typeof setInterval> | null>(null)
   const router = useRouter()
+
+  async function fetchTemplates() {
+    try {
+      const res = await fetch('/api/meal-templates')
+      if (!res.ok) return
+      const data = await res.json()
+      setTemplates(data.templates ?? [])
+    } catch { /* silent */ }
+  }
+
+  async function handleQuickLog(id: string) {
+    setQuickLoggingId(id)
+    try {
+      await fetch(`/api/meal-templates/${id}`, { method: 'POST' })
+      await fetchTodayMeals()
+    } finally {
+      setQuickLoggingId(null)
+    }
+  }
+
+  async function handleSaveTemplate() {
+    if (!templateName.trim() || !lastSavedMacros) return
+    setSavingTemplate(true)
+    try {
+      await fetch('/api/meal-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: templateName.trim(),
+          total_calories: lastSavedMacros.calories,
+          total_protein: lastSavedMacros.protein,
+          total_carbs: lastSavedMacros.carbs,
+          total_fat: lastSavedMacros.fat,
+          items_json: lastSavedItems.length > 0 ? JSON.stringify(lastSavedItems) : undefined,
+        }),
+      })
+      setShowTemplateForm(false)
+      await fetchTemplates()
+      router.push('/')
+    } finally {
+      setSavingTemplate(false)
+    }
+  }
 
   async function fetchTodayMeals() {
     try {
@@ -146,7 +207,7 @@ export default function LogPage() {
     await fetchTodayMeals()
   }
 
-  useEffect(() => { fetchTodayMeals() }, [])
+  useEffect(() => { fetchTodayMeals(); fetchTemplates() }, [])
 
   useEffect(() => {
     if (step === 'analyzing') {
@@ -236,7 +297,16 @@ export default function LogPage() {
         setStep('error')
         return
       }
-      router.push('/')
+      const savedTotals = totals(items)
+      setLastSavedMacros({
+        calories: Math.round(savedTotals.calories),
+        protein: Math.round(savedTotals.protein),
+        carbs: Math.round(savedTotals.carbs),
+        fat: Math.round(savedTotals.fat),
+      })
+      setLastSavedItems(items)
+      setTemplateName(description.trim().slice(0, 40) || 'My meal')
+      setStep('saved')
     } catch {
       setErrorMsg('Connection error. Try again.')
       setStep('error')
@@ -307,6 +377,31 @@ export default function LogPage() {
             </button>
           </div>
         </div>
+
+        {templates.length > 0 && (
+          <div className="px-4 mb-5">
+            <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <Zap size={11} className="text-brand" />
+              Quick Log
+            </p>
+            <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4" style={{ scrollbarWidth: 'none' }}>
+              {templates.map(tpl => (
+                <button
+                  key={tpl.id}
+                  onClick={() => handleQuickLog(tpl.id)}
+                  disabled={quickLoggingId === tpl.id}
+                  className="shrink-0 bg-card border border-line rounded-2xl px-3 py-2.5 text-left active:scale-95 transition-transform disabled:opacity-50"
+                >
+                  <p className="text-ink text-sm font-semibold whitespace-nowrap">{tpl.name}</p>
+                  <div className="flex gap-1.5 mt-0.5 tabular-nums text-xs">
+                    <span className="text-ink3">{Math.round(Number(tpl.total_calories))} cal</span>
+                    <span className="text-ok">{Math.round(Number(tpl.total_protein))}g P</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="px-4">
           {mode === 'photo' ? (
@@ -584,6 +679,66 @@ export default function LogPage() {
             className="w-full py-4 rounded-full bg-brand text-page font-bold text-base disabled:opacity-40 active:scale-95 transition-transform"
           >
             {step === 'saving' ? 'Saving...' : `Log meal — ${Math.round(t.calories)} cal ›`}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (step === 'saved' && lastSavedMacros) {
+    return (
+      <div className="min-h-screen bg-page flex flex-col pb-24">
+        <div className="px-4 pt-12 pb-6">
+          <h1 className="text-2xl font-bold text-ink tracking-tight">Meal logged</h1>
+          <p className="text-ink3 text-sm tabular-nums">
+            {lastSavedMacros.calories} cal &middot; {lastSavedMacros.protein}g P &middot; {lastSavedMacros.carbs}g C &middot; {lastSavedMacros.fat}g F
+          </p>
+        </div>
+
+        <div className="px-4 space-y-3">
+          {!showTemplateForm ? (
+            <button
+              onClick={() => setShowTemplateForm(true)}
+              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-card border border-line text-ink font-semibold text-sm active:scale-95 transition-transform"
+            >
+              <BookmarkPlus size={16} className="text-brand" />
+              Save as template
+            </button>
+          ) : (
+            <div className="bg-card border border-line rounded-2xl p-4 space-y-3">
+              <p className="text-ink font-semibold text-sm">Template name</p>
+              <input
+                type="text"
+                value={templateName}
+                onChange={e => setTemplateName(e.target.value)}
+                maxLength={60}
+                className="w-full bg-surface rounded-xl border border-line px-3 py-2.5 text-ink text-sm focus:outline-none focus:border-brand"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveTemplate}
+                  disabled={savingTemplate || !templateName.trim()}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-brand text-page text-sm font-semibold disabled:opacity-40 active:scale-95 transition-transform"
+                >
+                  <Check size={14} />
+                  {savingTemplate ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  onClick={() => setShowTemplateForm(false)}
+                  className="flex-1 py-2.5 rounded-xl bg-surface border border-line text-ink3 text-sm font-medium active:scale-95 transition-transform"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={() => router.push('/')}
+            className="w-full py-3.5 rounded-2xl bg-brand text-page font-bold text-base active:scale-95 transition-transform"
+          >
+            Done
           </button>
         </div>
       </div>

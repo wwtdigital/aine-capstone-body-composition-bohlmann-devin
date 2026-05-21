@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { db } from '@/lib/db'
 import { Plus, Upload, Scale } from 'lucide-react'
+import InBodyCharts from '@/components/InBodyCharts'
 
 export const revalidate = 0
 
@@ -12,12 +13,32 @@ type Reading = {
   lean_mass_kg: number | null
 }
 
+function kgToLbs(kg: number | null): number | null {
+  if (kg == null) return null
+  return Math.round(kg * 2.20462 * 10) / 10
+}
+
 export default async function InBodyPage() {
-  const result = await db.execute({
-    sql: `SELECT id, reading_date, weight_kg, body_fat_pct, lean_mass_kg FROM inbody_readings WHERE user_id = 'will' ORDER BY reading_date DESC LIMIT 20`,
-    args: [],
-  })
-  const readings = result.rows as unknown as Reading[]
+  const [listResult, chartResult] = await Promise.all([
+    db.execute({
+      sql: `SELECT id, reading_date, weight_kg, body_fat_pct, lean_mass_kg FROM inbody_readings WHERE user_id = 'will' ORDER BY reading_date DESC LIMIT 20`,
+      args: [],
+    }),
+    db.execute({
+      sql: `SELECT reading_date, weight_kg, body_fat_pct, lean_mass_kg FROM inbody_readings WHERE user_id = 'will' ORDER BY reading_date ASC`,
+      args: [],
+    }),
+  ])
+
+  const readings = listResult.rows as unknown as Reading[]
+
+  type ChartRow = { reading_date: number; weight_kg: number | null; body_fat_pct: number | null; lean_mass_kg: number | null }
+  const chartReadings = (chartResult.rows as unknown as ChartRow[]).map((r) => ({
+    date: new Date(r.reading_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    weight_lbs: kgToLbs(r.weight_kg),
+    body_fat_pct: r.body_fat_pct,
+    lean_mass_lbs: kgToLbs(r.lean_mass_kg),
+  }))
 
   return (
     <div className="min-h-screen bg-page pb-24">
@@ -43,6 +64,15 @@ export default async function InBodyPage() {
           </Link>
         </div>
       </div>
+
+      {chartReadings.length >= 2 && (
+        <div className="px-4 mb-4">
+          <div className="bg-card rounded-2xl border border-line p-4">
+            <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-3">Trends</p>
+            <InBodyCharts readings={chartReadings} />
+          </div>
+        </div>
+      )}
 
       {readings.length === 0 ? (
         <div className="mx-4 bg-card rounded-2xl border border-line p-12 text-center flex flex-col items-center gap-4">

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ChevronLeft, Plus, Dumbbell, Bike } from 'lucide-react'
 import FramedCard from '@/components/FramedCard'
 import ISymbol from '@/components/ISymbol'
+import WhoopNutritionCorrelation from '@/components/WhoopNutritionCorrelation'
 
 type Block = {
   id: string
@@ -520,7 +521,13 @@ export default function TrainingPage() {
           )}
         </section>
 
-        {/* ── Section 4: Recent Sessions ── */}
+        {/* ── Section 4: WHOOP × Nutrition Correlation ── */}
+        <div className="px-4 mt-4">
+          <WhoopNutritionCorrelation />
+        </div>
+
+        {/* ── Section 5: Recent Sessions ── */}
+
         <section className="space-y-3">
           <div className="flex items-center gap-3">
             <ISymbol size={14} className="text-ink3 opacity-60 shrink-0" />
