@@ -179,6 +179,7 @@ export default function ChatPage() {
             value={input}
             onChange={e => setInput(e.target.value)}
             placeholder="Ask about your data..."
+            maxLength={2000}
             className="flex-1 bg-card border border-line text-ink rounded-full px-5 py-3 text-sm focus:outline-none focus:border-linehi transition-colors placeholder-ink4"
             style={{ minHeight: '48px' }}
             disabled={loading}

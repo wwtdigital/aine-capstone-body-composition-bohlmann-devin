@@ -225,7 +225,27 @@ export default function TrainingPage() {
 
   const { weeks, monthLabels } = buildCalendarGrid(sessions)
 
-  const recentSessions = [...sessions].reverse().slice(0, 10)
+  const recentSessions = [...sessions].reverse().slice(0, 20)
+
+  // Group sessions by calendar day
+  const sessionsByDay: { dateLabel: string; ymd: string; items: Session[] }[] = []
+  const seen = new Map<string, Session[]>()
+  for (const s of recentSessions) {
+    const d = new Date(s.logged_at)
+    const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    if (!seen.has(ymd)) seen.set(ymd, [])
+    seen.get(ymd)!.push(s)
+  }
+  const todayYmd = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` })()
+  for (const [ymd, items] of seen.entries()) {
+    const diffMs = new Date(todayYmd + 'T12:00:00').getTime() - new Date(ymd + 'T12:00:00').getTime()
+    const diffDays = Math.round(diffMs / 86400000)
+    const dateLabel = diffDays === 0 ? 'Today'
+      : diffDays === 1 ? 'Yesterday'
+      : new Date(ymd + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    sessionsByDay.push({ dateLabel, ymd, items })
+  }
+  sessionsByDay.sort((a, b) => b.ymd.localeCompare(a.ymd))
 
   const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 
@@ -508,36 +528,51 @@ export default function TrainingPage() {
             <div className="flex-1 h-px bg-line" />
           </div>
 
-          {recentSessions.length === 0 ? (
+          {sessionsByDay.length === 0 ? (
             <div className="bg-card rounded-2xl border border-line p-8 text-center">
               <p className="text-ink3 text-sm">No sessions logged yet.</p>
             </div>
           ) : (
-            <FramedCard className="bg-card rounded-2xl border border-line divide-y divide-line">
-              {recentSessions.map((s) => {
-                const cls = classifySession(s.session_type)
-                const date = new Date(s.logged_at).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                })
+            <div className="pl-2">
+              {sessionsByDay.map((day, di) => {
+                const isLast = di === sessionsByDay.length - 1
                 return (
-                  <div key={s.id} className="flex items-center justify-between px-4 py-3">
-                    <span className="text-ink2 text-sm">{date}</span>
-                    <span
-                      className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                        cls === 'strength'
-                          ? 'bg-brand/15 text-brand'
-                          : cls === 'soccer'
-                          ? 'bg-ok/15 text-ok'
-                          : 'bg-surface text-ink3'
-                      }`}
-                    >
-                      {s.session_type}
-                    </span>
+                  <div key={day.ymd} className="flex gap-4">
+                    {/* Timeline spine */}
+                    <div className="flex flex-col items-center w-4 shrink-0">
+                      <div className={`w-2 h-2 rounded-full mt-1 shrink-0 ${day.dateLabel === 'Today' ? 'bg-brand' : 'bg-ink4'}`} />
+                      {!isLast && <div className="w-px flex-1 bg-line mt-1" />}
+                    </div>
+
+                    {/* Content */}
+                    <div className={`flex-1 pb-4 ${isLast ? '' : ''}`}>
+                      <p className={`text-xs mb-1.5 ${day.dateLabel === 'Today' ? 'text-brand font-semibold' : 'text-ink4'}`}>
+                        {day.dateLabel}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {day.items.map((s) => {
+                          const cls = classifySession(s.session_type)
+                          return (
+                            <span
+                              key={s.id}
+                              className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+                                cls === 'strength'
+                                  ? 'bg-brand/15 text-brand'
+                                  : cls === 'soccer'
+                                  ? 'bg-ok/15 text-ok'
+                                  : 'bg-surface text-ink3'
+                              }`}
+                            >
+                              {s.session_type}
+                            </span>
+                          )
+                        })}
+                      </div>
+                    </div>
                   </div>
                 )
               })}
-            </FramedCard>
+            </div>
           )}
         </section>
       </div>

@@ -86,8 +86,9 @@ export default function LogPage() {
   const [notes, setNotes] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
   const [loadingText, setLoadingText] = useState(PHOTO_LOADING_MESSAGES[0])
-  const [loggedAt] = useState(() => Date.now())
+  const [loggedAt, setLoggedAt] = useState(() => Date.now())
   const [todayMeals, setTodayMeals] = useState<SavedMeal[]>([])
+  const [weekMeals, setWeekMeals] = useState<SavedMeal[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editMacros, setEditMacros] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 })
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -101,10 +102,12 @@ export default function LogPage() {
       const res = await fetch('/api/meals')
       if (!res.ok) return
       const all: SavedMeal[] = await res.json()
-      const todayStr = new Date().toISOString().split('T')[0]
-      setTodayMeals(
-        all.filter(m => new Date(m.logged_at).toISOString().split('T')[0] === todayStr)
-      )
+      const toLocalDate = (d: Date) =>
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      const todayStr = toLocalDate(new Date())
+      const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
+      setTodayMeals(all.filter(m => toLocalDate(new Date(m.logged_at)) === todayStr))
+      setWeekMeals(all.filter(m => m.logged_at >= sevenDaysAgo))
     } catch { /* silent */ }
   }
 
@@ -242,6 +245,18 @@ export default function LogPage() {
 
   const t = totals(items)
 
+  function sumMeals(meals: SavedMeal[]) {
+    return meals.reduce(
+      (acc, m) => ({
+        cal: acc.cal + Math.round(Number(m.total_calories)),
+        pro: acc.pro + Math.round(Number(m.total_protein)),
+        carb: acc.carb + Math.round(Number(m.total_carbs)),
+        fat: acc.fat + Math.round(Number(m.total_fat)),
+      }),
+      { cal: 0, pro: 0, carb: 0, fat: 0 }
+    )
+  }
+
   if (step === 'capture') {
     return (
       <div className="min-h-screen bg-page pb-24">
@@ -255,6 +270,24 @@ export default function LogPage() {
             <span className="text-ink3 text-sm">Lifting or soccer today?</span>
             <span className="text-brand text-sm font-semibold">Log Workout →</span>
           </Link>
+        </div>
+
+        {/* Meal time picker */}
+        <div className="px-4 mb-4">
+          <div className="bg-surface border border-line rounded-2xl px-4 py-3 flex items-center justify-between">
+            <span className="text-ink3 text-sm">Meal time</span>
+            <input
+              type="time"
+              value={new Date(loggedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+              onChange={e => {
+                const [h, m] = e.target.value.split(':').map(Number)
+                const d = new Date(loggedAt)
+                d.setHours(h, m, 0, 0)
+                setLoggedAt(d.getTime())
+              }}
+              className="bg-transparent text-ink text-sm font-semibold focus:outline-none"
+            />
+          </div>
         </div>
 
         {/* Full-width pill toggle */}
@@ -299,6 +332,7 @@ export default function LogPage() {
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 placeholder="Describe your meal — e.g. 'grilled chicken breast, 1 cup white rice, steamed broccoli'"
+                maxLength={1000}
                 className="bg-surface rounded-xl border border-line px-4 py-3 text-ink w-full focus:outline-none focus:border-linehi resize-none"
                 style={{ minHeight: '160px' }}
               />
@@ -313,8 +347,29 @@ export default function LogPage() {
           )}
         </div>
 
-        {todayMeals.length > 0 && (
+        {(todayMeals.length > 0 || weekMeals.length > 0) && (
           <div className="px-4 mt-8">
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: 'Today', s: sumMeals(todayMeals) },
+                { label: 'This week', s: sumMeals(weekMeals) },
+              ].map(({ label, s }) => (
+                <div key={label} className="bg-card border border-line rounded-2xl p-4">
+                  <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-2">{label}</p>
+                  <p className="text-ink font-bold text-xl tabular-nums">{s.cal} <span className="text-ink3 text-sm font-normal">cal</span></p>
+                  <div className="flex gap-2 mt-1.5 tabular-nums text-xs">
+                    <span className="text-ok font-medium">{s.pro}g P</span>
+                    <span className="text-amber-500 font-medium">{s.carb}g C</span>
+                    <span className="text-purple-400 font-medium">{s.fat}g F</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {todayMeals.length > 0 && (
+          <div className="px-4 mt-6">
             <p className="text-ink3 text-xs font-semibold uppercase tracking-wider mb-3">Today&apos;s meals</p>
             <div className="space-y-2">
               {todayMeals.map(meal => {

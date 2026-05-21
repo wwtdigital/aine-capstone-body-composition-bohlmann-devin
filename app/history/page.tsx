@@ -63,7 +63,7 @@ function groupMealsByDay(meals: Meal[]): MealDay[] {
   const map = new Map<string, Meal[]>()
   for (const m of meals) {
     const d = new Date(m.logged_at)
-    const key = d.toISOString().split('T')[0]
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
     if (!map.has(key)) map.set(key, [])
     map.get(key)!.push(m)
   }

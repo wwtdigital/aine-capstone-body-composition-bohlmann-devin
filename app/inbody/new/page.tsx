@@ -144,17 +144,19 @@ export default function InBodyNewPage() {
         </div>
 
         {[
-          { field: 'weight_lbs',        label: 'Weight (lbs)',        step: '0.5' },
-          { field: 'body_fat_pct',      label: 'Body Fat (%)',        step: '0.1' },
-          { field: 'lean_mass_lbs',     label: 'Lean Mass (lbs)',     step: '0.5' },
-          { field: 'body_water_lbs',    label: 'Body Water (lbs)',    step: '0.5' },
-          { field: 'visceral_fat_level', label: 'Visceral Fat Level', step: '1'   },
-        ].map(({ field, label, step }) => (
+          { field: 'weight_lbs',         label: 'Weight (lbs)',        step: '0.5', min: '50',  max: '700' },
+          { field: 'body_fat_pct',       label: 'Body Fat (%)',        step: '0.1', min: '1',   max: '70'  },
+          { field: 'lean_mass_lbs',      label: 'Lean Mass (lbs)',     step: '0.5', min: '30',  max: '500' },
+          { field: 'body_water_lbs',     label: 'Body Water (lbs)',    step: '0.5', min: '20',  max: '300' },
+          { field: 'visceral_fat_level', label: 'Visceral Fat Level',  step: '1',   min: '1',   max: '30'  },
+        ].map(({ field, label, step, min, max }) => (
           <div key={field}>
             <label className="text-ink3 text-xs font-semibold uppercase tracking-wider block mb-2">{label}</label>
             <input
               type="number"
               step={step}
+              min={min}
+              max={max}
               value={fields[field as keyof typeof fields]}
               onChange={e => set(field, e.target.value)}
               placeholder="—"

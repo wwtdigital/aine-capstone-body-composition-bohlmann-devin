@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { getGoals } from '@/lib/getGoals'
+import { USER_ID } from '@/lib/userId'
 import Link from 'next/link'
 import MacroRing from '@/components/MacroRing'
 import MealList from '@/components/MealSheet'
@@ -9,6 +10,26 @@ import FramedCard from '@/components/FramedCard'
 import ISymbol from '@/components/ISymbol'
 
 export const revalidate = 0
+
+const USER_TZ = 'America/Chicago'
+
+function getLocalToday() {
+  const now = new Date()
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: USER_TZ,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false,
+  })
+  const p = Object.fromEntries(fmt.formatToParts(now).map(x => [x.type, x.value]))
+  const todayStr = `${p.year}-${p.month}-${p.day}`
+  const h = p.hour === '24' ? '00' : p.hour
+  const offsetMs = now.getTime() - Date.parse(`${todayStr}T${h}:${p.minute}:${p.second}Z`)
+  const todayStartMs = Date.parse(`${todayStr}T00:00:00Z`) + offsetMs
+  const yesterdayStr = new Intl.DateTimeFormat('en-CA', { timeZone: USER_TZ })
+    .format(new Date(todayStartMs - 86400000))
+  return { todayStr, yesterdayStr, todayStartMs, tzOffsetSec: -Math.round(offsetMs / 1000) }
+}
 
 type NutritionRow = { cal: number; prot: number; carbs: number; fat: number }
 type InBodyRow = { reading_date: number; weight_kg: number | null; body_fat_pct: number | null; lean_mass_kg: number | null }
@@ -20,41 +41,37 @@ type WhoopWeekRow = { date: string; hrv_ms: number | null; recovery_score: numbe
 type WeekNutritionRow = { day: string; cal: number }
 
 export default async function Today() {
-  const startOfToday = new Date()
-  startOfToday.setUTCHours(0, 0, 0, 0)
-  const todayStart = startOfToday.getTime()
-  const todayStr = new Date().toISOString().split('T')[0]
-  const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+  const { todayStr, yesterdayStr, todayStartMs, tzOffsetSec } = getLocalToday()
 
   const [GOALS, nutritionResult, inbodyResult, mealsResult, whoopResult, whoopWeekResult, weekNutritionResult, todayWorkoutsResult] = await Promise.all([
     getGoals(),
     db.execute({
-      sql: `SELECT COALESCE(SUM(total_calories),0) as cal, COALESCE(SUM(total_protein),0) as prot, COALESCE(SUM(total_carbs),0) as carbs, COALESCE(SUM(total_fat),0) as fat FROM meals WHERE user_id = 'will' AND logged_at >= ?`,
-      args: [todayStart],
+      sql: `SELECT COALESCE(SUM(total_calories),0) as cal, COALESCE(SUM(total_protein),0) as prot, COALESCE(SUM(total_carbs),0) as carbs, COALESCE(SUM(total_fat),0) as fat FROM meals WHERE user_id = ? AND logged_at >= ?`,
+      args: [USER_ID, todayStartMs],
     }),
     db.execute({
-      sql: `SELECT reading_date, weight_kg, body_fat_pct, lean_mass_kg FROM inbody_readings WHERE user_id = 'will' ORDER BY reading_date DESC LIMIT 1`,
-      args: [],
+      sql: `SELECT reading_date, weight_kg, body_fat_pct, lean_mass_kg FROM inbody_readings WHERE user_id = ? ORDER BY reading_date DESC LIMIT 1`,
+      args: [USER_ID],
     }),
     db.execute({
-      sql: `SELECT id, logged_at, total_calories, total_protein, total_carbs, items_json, photo_url FROM meals WHERE user_id = 'will' AND logged_at >= ? ORDER BY logged_at DESC LIMIT 8`,
-      args: [todayStart],
+      sql: `SELECT id, logged_at, total_calories, total_protein, total_carbs, items_json, photo_url FROM meals WHERE user_id = ? AND logged_at >= ? ORDER BY logged_at DESC LIMIT 8`,
+      args: [USER_ID, todayStartMs],
     }),
     db.execute({
-      sql: `SELECT date, recovery_score, strain, hrv_ms, rhr, sleep_minutes, sleep_efficiency FROM whoop_daily WHERE user_id = 'will' AND date IN (?, ?) ORDER BY date DESC LIMIT 1`,
-      args: [todayStr, yesterdayStr],
+      sql: `SELECT date, recovery_score, strain, hrv_ms, rhr, sleep_minutes, sleep_efficiency FROM whoop_daily WHERE user_id = ? AND date IN (?, ?) ORDER BY date DESC LIMIT 1`,
+      args: [USER_ID, todayStr, yesterdayStr],
     }),
     db.execute({
-      sql: `SELECT date, hrv_ms, recovery_score, sleep_minutes, sleep_efficiency FROM whoop_daily WHERE user_id = 'will' ORDER BY date DESC LIMIT 7`,
-      args: [],
+      sql: `SELECT date, hrv_ms, recovery_score, sleep_minutes, sleep_efficiency FROM whoop_daily WHERE user_id = ? ORDER BY date DESC LIMIT 7`,
+      args: [USER_ID],
     }),
     db.execute({
-      sql: `SELECT date(logged_at/1000, 'unixepoch') as day, ROUND(SUM(total_calories)) as cal FROM meals WHERE user_id = 'will' AND logged_at >= ? GROUP BY day`,
-      args: [Date.now() - 7 * 24 * 60 * 60 * 1000],
+      sql: `SELECT date(logged_at/1000 + ?, 'unixepoch') as day, ROUND(SUM(total_calories)) as cal FROM meals WHERE user_id = ? AND logged_at >= ? GROUP BY day`,
+      args: [tzOffsetSec, USER_ID, Date.now() - 7 * 24 * 60 * 60 * 1000],
     }),
     db.execute({
-      sql: `SELECT logged_at, session_type FROM workout_sessions WHERE user_id = 'will' AND logged_at >= ? ORDER BY logged_at ASC`,
-      args: [todayStart],
+      sql: `SELECT logged_at, session_type FROM workout_sessions WHERE user_id = ? AND logged_at >= ? ORDER BY logged_at ASC`,
+      args: [USER_ID, todayStartMs],
     }).catch(() => ({ rows: [] })),
   ])
 
@@ -83,9 +100,9 @@ export default async function Today() {
     calMap[row.day] = row.cal
   }
   const last7Days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(Date.now() - (6 - i) * 86400000)
-    const key = d.toISOString().split('T')[0]
-    const initial = d.toLocaleDateString('en-US', { weekday: 'narrow' })
+    const d = new Date(todayStartMs - (6 - i) * 86400000 + 43200000)
+    const key = new Intl.DateTimeFormat('en-CA', { timeZone: USER_TZ }).format(d)
+    const initial = new Intl.DateTimeFormat('en-US', { weekday: 'narrow', timeZone: USER_TZ }).format(d)
     const cal = calMap[key] ?? 0
     const pct = cal / GOALS.daily_calories
     const color = pct >= 0.9 ? 'bg-ok' : pct >= 0.5 ? 'bg-warn' : 'bg-surface'
@@ -314,22 +331,22 @@ export default async function Today() {
           </div>
           <div className="grid grid-cols-3 gap-3">
             <StatBlock
-              value={latest.weight_kg != null ? Math.round(latest.weight_kg * 2.20462).toString() : '—'}
+              value={latest.weight_kg != null && latest.weight_kg < 400 ? Math.round(latest.weight_kg * 2.20462).toString() : '—'}
               unit="lbs"
-              delta={latest.weight_kg != null ? (Math.round(latest.weight_kg * 2.20462) - GOALS.target_weight_lbs) : null}
+              delta={latest.weight_kg != null && latest.weight_kg < 400 ? (Math.round(latest.weight_kg * 2.20462) - GOALS.target_weight_lbs) : null}
               label="Weight"
               positiveIsGood={false}
             />
             <StatBlock
-              value={latest.body_fat_pct?.toFixed(1) ?? '—'}
+              value={latest.body_fat_pct != null && latest.body_fat_pct <= 100 ? latest.body_fat_pct.toFixed(1) : '—'}
               unit="%"
-              delta={latest.body_fat_pct != null ? (latest.body_fat_pct - GOALS.target_body_fat_pct) : null}
+              delta={latest.body_fat_pct != null && latest.body_fat_pct <= 100 ? (latest.body_fat_pct - GOALS.target_body_fat_pct) : null}
               label="Body Fat"
               positiveIsGood={false}
             />
             <div className="text-center">
               <p className="text-ink font-bold text-xl tabular-nums leading-tight">
-                {latest.lean_mass_kg != null ? Math.round(latest.lean_mass_kg * 2.20462) : '—'}
+                {latest.lean_mass_kg != null && latest.lean_mass_kg < 300 ? Math.round(latest.lean_mass_kg * 2.20462) : '—'}
               </p>
               <p className="text-ink3 text-xs mt-0.5">lbs lean</p>
             </div>
@@ -523,7 +540,7 @@ function RecoveryBars({ values, muted = false }: {
             : '#ef4444'
           const isToday = i === data.length - 1
           return (
-            <div key={i} className="flex-1 flex flex-col justify-end">
+            <div key={i} className="flex-1 h-full flex flex-col justify-end">
               <div
                 className="w-full rounded-sm"
                 style={{ height: `${Math.max(10, pct * 100)}%`, backgroundColor: color, opacity: isToday ? 1 : 0.55 }}
@@ -622,7 +639,7 @@ function HrvWeekBars({ values, avg, muted = false }: {
             : hrv >= baseline * 0.9 ? '#6366f1'
             : '#f59e0b'
           return (
-            <div key={i} className="flex-1 flex flex-col justify-end">
+            <div key={i} className="flex-1 h-full flex flex-col justify-end">
               <div
                 className="w-full rounded-sm"
                 style={{ height: `${Math.max(10, pct * 100)}%`, backgroundColor: color, opacity: isToday ? 1 : 0.55 }}
@@ -668,7 +685,7 @@ function SleepWeekBars({ values, muted = false }: {
           const pct = mins != null ? mins / maxMins : 0
           const isToday = i === data.length - 1
           return (
-            <div key={i} className="flex-1 flex flex-col justify-end">
+            <div key={i} className="flex-1 h-full flex flex-col justify-end">
               <div
                 className="w-full rounded-sm"
                 style={{ height: `${Math.max(10, pct * 100)}%`, backgroundColor: isToday ? '#6366f1' : '#475569', opacity: isToday ? 1 : 0.5 }}

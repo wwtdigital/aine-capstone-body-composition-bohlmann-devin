@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { USER_ID } from '@/lib/userId'
+import { encrypt, decrypt } from '@/lib/encrypt'
 
 async function ensureColumn() {
   try {
@@ -14,8 +15,8 @@ export async function GET() {
     sql: `SELECT context_notes FROM user_settings WHERE user_id = ?`,
     args: [USER_ID],
   })
-  const notes = (result.rows[0] as any)?.context_notes ?? ''
-  return NextResponse.json({ context_notes: notes })
+  const raw = (result.rows[0] as any)?.context_notes ?? ''
+  return NextResponse.json({ context_notes: decrypt(raw) })
 }
 
 export async function PUT(request: NextRequest) {
@@ -25,7 +26,7 @@ export async function PUT(request: NextRequest) {
     sql: `INSERT INTO user_settings (user_id, onboarding_completed, context_notes)
           VALUES (?, 1, ?)
           ON CONFLICT(user_id) DO UPDATE SET context_notes = excluded.context_notes`,
-    args: [USER_ID, context_notes ?? ''],
+    args: [USER_ID, encrypt(context_notes ?? '')],
   })
   return NextResponse.json({ ok: true })
 }

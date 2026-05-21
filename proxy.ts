@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionToken, SESSION_COOKIE } from '@/lib/session'
 
-const PUBLIC_EXACT = new Set(['/login', '/api/auth/login', '/api/auth/check'])
+const PUBLIC_EXACT = new Set(['/login', '/api/auth/login', '/api/auth/check', '/api/whoop/callback'])
 const PUBLIC_PREFIX = ['/_next', '/favicon', '/icon', '/icons', '/apple-touch-icon', '/sw.js']
 const PUBLIC_FILES = new Set(['/manifest.json', '/robots.txt'])
 
