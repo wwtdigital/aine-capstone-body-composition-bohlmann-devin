@@ -137,7 +137,7 @@ export default function FloatingChat() {
 
       {/* Drawer */}
       <div
-        className={`fixed bottom-0 left-0 right-0 bg-page rounded-t-2xl z-40 flex flex-col transition-transform duration-300 ease-out ${
+        className={`fixed bottom-[68px] left-0 right-0 bg-page rounded-t-2xl z-40 flex flex-col transition-transform duration-300 ease-out ${
           open ? 'translate-y-0' : 'translate-y-full'
         }`}
         style={{ height: '75vh' }}
@@ -224,7 +224,7 @@ export default function FloatingChat() {
         </div>
 
         {/* Input bar */}
-        <div className="shrink-0 px-4 pt-2 pb-safe border-t border-line" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+        <div className="shrink-0 px-4 pt-2 pb-3 border-t border-line">
           <form onSubmit={handleSubmit} className="flex items-center gap-2">
             <input
               ref={inputRef}
