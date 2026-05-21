@@ -325,9 +325,12 @@ export default async function Today() {
               <ISymbol size={14} className="text-ink3 opacity-60" />
               <span className="eyebrow">Body Comp</span>
             </div>
-            <span className="text-xs text-ink3">
-              {new Date(latest.reading_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-            </span>
+            <div className="flex items-center gap-3">
+              <Link href="/inbody/new" className="text-xs font-semibold text-brand">+ Add reading</Link>
+              <span className="text-xs text-ink3">
+                {new Date(latest.reading_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </span>
+            </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <StatBlock
